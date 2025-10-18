@@ -27,6 +27,7 @@ import { UserButton } from "@clerk/clerk-react";
 const Meeting = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"mic" | "bot">("mic");
+  const navigate = useNavigate();
 
   // Transcription (microphone) hooks
   const {
