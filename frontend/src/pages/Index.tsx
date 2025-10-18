@@ -31,7 +31,7 @@ const Index = () => {
               <Brain className="w-6 h-6 text-primary-foreground" />
             </div>
             <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              EchoTwin
+              SayLess
             </span>
           </div>
           {isSignedIn ? (

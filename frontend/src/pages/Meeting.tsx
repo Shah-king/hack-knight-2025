@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Mic, MicOff, Play, Square, Volume2, WifiOff } from "lucide-react";
+import { Brain, Mic, MicOff, Play, Square, Volume2, WifiOff, MessageSquareText } from "lucide-react";
 import { useState } from "react";
 import { TranscriptionPanel } from "@/components/meeting/TranscriptionPanel";
 import { SummaryPanel } from "@/components/meeting/SummaryPanel";
@@ -74,10 +74,10 @@ const Meeting = () => {
           <div className="container mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Brain className="w-6 h-6 text-primary-foreground" />
+                <MessageSquareText className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">EchoTwin</h1>
+                <h1 className="text-xl font-bold">SayLess</h1>
                 <p className="text-xs text-muted-foreground">Meeting Session</p>
               </div>
             </div>
@@ -179,10 +179,14 @@ const Meeting = () => {
 
             {/* Right Column - AI Twin & Summary */}
             <div className="space-y-6">
-              <AITwinControls 
-                isActive={isTwinActive} 
-                onToggle={() => setIsTwinActive(!isTwinActive)} 
-              />
+              <Card className="p-0.5 overflow-hidden border-2 border-card-border rounded-lg shadow-lg">
+                <div className={`relative p-6 rounded-[5.5px] h-full ${isTwinActive ? "bg-gradient-primary" : "bg-gradient-muted"}`}>
+                  <AITwinControls
+                    isActive={isTwinActive}
+                    onToggle={() => setIsTwinActive(!isTwinActive)}
+                  />
+                </div>
+              </Card>
               <SummaryPanel />
             </div>
           </div>
