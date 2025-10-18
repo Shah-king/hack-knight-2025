@@ -24,6 +24,8 @@ import { useBot } from "@/hooks/useBot";
 import { useToast } from "@/hooks/use-toast";
 import { UserButton } from "@clerk/clerk-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { FloatingIcons } from "@/components/ui/floating-icons";
+import { motion } from "framer-motion";
 
 const Meeting = () => {
   const { toast } = useToast();
@@ -139,6 +141,22 @@ const Meeting = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Animated AI Energy Flow Background */}
+      <motion.div
+        className="fixed inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 opacity-15 blur-3xl pointer-events-none"
+        animate={{ 
+          backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+          scale: [1, 1.05, 1]
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        style={{ backgroundSize: '200% 200%' }}
+      />
+      
+      {/* Floating decorative icons */}
+      <div className="fixed inset-0 pointer-events-none">
+        <FloatingIcons />
+      </div>
+      
       {/* Ambient background */}
       <div className="fixed inset-0 bg-gradient-aurora opacity-20 animate-pulse-glow pointer-events-none" />
       <div className="fixed inset-0 bg-[linear-gradient(rgba(0,217,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,217,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none" />
@@ -198,16 +216,32 @@ const Meeting = () => {
 
         {/* Main Content */}
         <main className="container mx-auto px-6 py-6">
-          <div className="grid lg:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="grid lg:grid-cols-3 gap-6"
+          >
             {/* Left Column - Transcription */}
             <div className="lg:col-span-2 space-y-6">
-              <TranscriptionPanel
-                isListening={isTranscribing}
-                transcriptions={transcriptions}
-              />
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <TranscriptionPanel
+                  isListening={isTranscribing}
+                  transcriptions={transcriptions}
+                />
+              </motion.div>
 
               {/* Control Bar */}
-              <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10 hover:border-primary/20 transition-all">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <Button
@@ -268,11 +302,17 @@ const Meeting = () => {
                     </Button>
                   </div>
                 </div>
-              </Card>
+                </Card>
+              </motion.div>
             </div>
 
             {/* Right Column - AI Bot & Summary */}
-            <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="space-y-6"
+            >
               <Tabs
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as "mic" | "bot")}
@@ -339,8 +379,8 @@ const Meeting = () => {
               </Tabs>
 
               <SummaryPanel />
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </main>
       </div>
     </div>

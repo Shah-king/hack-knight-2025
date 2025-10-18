@@ -1,8 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Brain, Mic, Sparkles, Zap } from "lucide-react";
+import { Brain, Mic, Sparkles, Zap, ArrowRight, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
+import { FloatingOrbs } from "@/components/ui/floating-orbs";
+import { FloatingIcons } from "@/components/ui/floating-icons";
+import { motion } from "framer-motion";
 import heroBg from "@/assets/bg1.jpg";
 
 const Index = () => {
@@ -11,6 +16,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Animated AI Energy Flow Background */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 opacity-20 blur-3xl"
+        animate={{ 
+          backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+          scale: [1, 1.1, 1]
+        }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+        style={{ backgroundSize: '200% 200%' }}
+      />
+      
+      {/* Floating decorative icons */}
+      <FloatingIcons />
+      
+      {/* Floating orbs background */}
+      <FloatingOrbs />
+      
       {/* Animated background */}
       <div className="absolute inset-0 bg-gradient-aurora opacity-30 animate-pulse-glow" />
       <div className="absolute inset-0" style={{
@@ -56,60 +78,103 @@ const Index = () => {
         <main className="container mx-auto px-6 py-20">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-glass border border-primary/20 shadow-glow">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur-glass border border-primary/20 shadow-glow hover:shadow-glow-strong transition-all cursor-default"
+            >
               <Sparkles className="w-4 h-4 text-primary animate-pulse-glow" />
               <span className="text-sm text-muted-foreground">
                 Your AI-powered meeting assistant
               </span>
-            </div>
+            </motion.div>
 
             {/* Main Heading */}
-            <h1 className="text-6xl md:text-7xl font-bold leading-tight">
-              <span className="bg-gradient-primary bg-clip-text text-transparent animate-shimmer bg-[length:200%_auto]">
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-6xl md:text-7xl font-bold leading-tight"
+            >
+              <motion.span
+                className="inline-block bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 bg-clip-text text-transparent"
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+                style={{ backgroundSize: '200% 200%' }}
+              >
                 Never Miss
-              </span>
+              </motion.span>
               {" "}a Meeting
               <br />
               <span className="text-foreground">Again</span>
-            </h1>
+            </motion.h1>
 
             {/* Subheading */}
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+            >
               Your personalized AI assistant joins meetings, listens, summarizes key points,
               responds in any voice, and creates audio lessons.
-            </p>
+            </motion.p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4"
+            >
               {isSignedIn ? (
                 <Button
                   size="lg"
                   onClick={() => navigate('/meeting')}
-                  className="bg-gradient-primary hover:shadow-glow-strong transition-all animate-float group"
+                  className="bg-gradient-primary hover:shadow-glow-strong transition-all group relative overflow-hidden"
                 >
-                  <Zap className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" />
-                  Try Live Demo
+                  <span className="relative z-10 flex items-center">
+                    <Zap className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" />
+                    Try Live Demo
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </span>
                 </Button>
               ) : (
                 <SignUpButton mode="modal">
                   <Button
                     size="lg"
-                    className="bg-gradient-primary hover:shadow-glow-strong transition-all animate-float group"
+                    className="bg-gradient-primary hover:shadow-glow-strong transition-all group relative overflow-hidden"
                   >
-                    <Zap className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" />
-                    Get Started
+                    <span className="relative z-10 flex items-center">
+                      <Zap className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" />
+                      Get Started
+                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </span>
                   </Button>
                 </SignUpButton>
               )}
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-primary/30 hover:border-primary hover:bg-primary/10 hover:shadow-glow transition-all"
-              >
-                <Mic className="w-5 h-5 mr-2" />
-                Clone Your Voice
-              </Button>
-            </div>
+              <div className="relative group">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-primary/30 hover:border-primary hover:bg-primary/10 hover:shadow-glow transition-all relative z-10"
+                >
+                  <Mic className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Clone Your Voice
+                </Button>
+                {/* Animated voice wave rings */}
+                <span className="absolute inset-0 rounded-lg border-2 border-primary opacity-0 group-hover:opacity-100 animate-ping"></span>
+                <span className="absolute inset-0 rounded-lg border-2 border-cyan-400 opacity-0 group-hover:opacity-75 animate-ping" style={{ animationDelay: '0.2s' }}></span>
+                <span className="absolute inset-0 rounded-lg border border-blue-400 opacity-0 group-hover:opacity-50 animate-pulse blur-sm"></span>
+              </div>
+            </motion.div>
 
             {/* Features Grid */}
             <div className="grid md:grid-cols-3 gap-6 pt-16">
@@ -117,31 +182,66 @@ const Index = () => {
                 {
                   icon: Brain,
                   title: "Real-time AI",
-                  description: "Listens and understands meetings as they happen"
+                  description: "Listens and understands meetings as they happen",
+                  gradient: "from-cyan-500 to-blue-500"
                 },
                 {
                   icon: Mic,
                   title: "Voice Cloning",
-                  description: "Speaks in your own voice using ElevenLabs"
+                  description: "Speaks in your own voice using ElevenLabs",
+                  gradient: "from-purple-500 to-pink-500"
                 },
                 {
                   icon: Sparkles,
                   title: "Smart Summaries",
-                  description: "Auto-generates key points and action items"
+                  description: "Auto-generates key points and action items",
+                  gradient: "from-amber-500 to-orange-500"
                 }
               ].map((feature, i) => (
-                <div 
-                  key={i}
-                  className="group p-6 rounded-xl bg-card/50 backdrop-blur-glass border border-primary/10 hover:border-primary/30 transition-all hover:shadow-glow"
-                >
-                  <div className="w-12 h-12 rounded-lg bg-gradient-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <feature.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </div>
+                <SpotlightCard key={i} className="group hover:shadow-glow">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                  >
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.gradient} bg-opacity-10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <feature.icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  </motion.div>
+                </SpotlightCard>
               ))}
             </div>
+
+            {/* Additional Features List */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="mt-16 grid md:grid-cols-2 gap-4 max-w-2xl mx-auto"
+            >
+              {[
+                "Real-time transcription",
+                "Multi-language support",
+                "Automatic meeting notes",
+                "Voice response capabilities"
+              ].map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3, delay: i * 0.1 }}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="text-muted-foreground">{feature}</span>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         </main>
       </div>
