@@ -1,59 +1,128 @@
 import express from 'express';
+import elevenlabsService from '../services/elevenlabsService.js';
+import recallService from '../services/recallService.js';
 
 const router = express.Router();
 
 // Clone voice from audio samples
 router.post('/clone', async (req, res) => {
   try {
-    const { userId, audioSamples } = req.body;
+    const { name, description, audioSamples, userId } = req.body;
 
-    // TODO: Call ElevenLabs API to clone voice
+    if (!name || !audioSamples || audioSamples.length === 0) {
+      return res.status(400).json({
+        error: 'Name and audio samples are required'
+      });
+    }
+
+    // Convert base64 audio samples to buffers
+    const buffers = audioSamples.map(sample =>
+      Buffer.from(sample, 'base64')
+    );
+
+    const result = await elevenlabsService.cloneVoice({
+      name,
+      description,
+      audioSamples: buffers,
+      labels: ['custom', userId]
+    });
+
     res.json({
       success: true,
-      voiceId: 'mock-voice-id',
-      message: 'Voice cloning initiated'
+      voiceId: result.voice_id,
+      message: 'Voice cloned successfully'
     });
   } catch (error) {
+    console.error('Voice cloning error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Generate speech from text using cloned voice
+// Generate speech from text (TTS)
 router.post('/speak', async (req, res) => {
   try {
-    const { text, voiceId } = req.body;
+    const { text, voiceId, botId, stability, similarityBoost } = req.body;
 
     if (!text) {
       return res.status(400).json({ error: 'Text is required' });
     }
 
-    // TODO: Call ElevenLabs TTS API
+    // Generate audio
+    const audioBuffer = await elevenlabsService.textToSpeech({
+      text,
+      voiceId,
+      stability,
+      similarityBoost
+    });
+
+    // Note: Audio injection with Recall.ai uses Output Media API
+    // This requires serving the audio via a web endpoint
+    // For now, just return the audio to the client
+    // TODO: Implement Output Media API integration
+
+    // Return audio as base64
     res.json({
       success: true,
-      audioUrl: 'mock-audio-url',
-      text
+      audio: audioBuffer.toString('base64'),
+      text,
+      size: audioBuffer.length,
+      botId: botId || null
     });
   } catch (error) {
+    console.error('TTS error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get user's cloned voices
-router.get('/list/:userId', async (req, res) => {
+// Get available voices
+router.get('/list', async (req, res) => {
   try {
-    const { userId } = req.params;
+    const voices = await elevenlabsService.getVoices();
 
-    // TODO: Retrieve user's voice clones from database
     res.json({
-      voices: [
-        {
-          id: 'mock-voice-id',
-          name: 'My Voice',
-          createdAt: new Date().toISOString()
-        }
-      ]
+      success: true,
+      voices: voices.map(v => ({
+        id: v.voice_id,
+        name: v.name,
+        category: v.category,
+        description: v.description,
+        labels: v.labels
+      }))
     });
   } catch (error) {
+    console.error('Error listing voices:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get voice details
+router.get('/:voiceId', async (req, res) => {
+  try {
+    const { voiceId } = req.params;
+    const voice = await elevenlabsService.getVoice(voiceId);
+
+    res.json({
+      success: true,
+      voice
+    });
+  } catch (error) {
+    console.error('Error getting voice:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete voice
+router.delete('/:voiceId', async (req, res) => {
+  try {
+    const { voiceId } = req.params;
+    await elevenlabsService.deleteVoice(voiceId);
+
+    res.json({
+      success: true,
+      message: 'Voice deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting voice:', error);
     res.status(500).json({ error: error.message });
   }
 });
