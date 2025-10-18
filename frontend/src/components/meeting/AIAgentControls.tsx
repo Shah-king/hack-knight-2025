@@ -2,12 +2,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bot, Power, Volume2 } from "lucide-react";
 
-interface AITwinControlsProps {
+interface AIAgentControlsProps {
   isActive: boolean;
   onToggle: () => void;
 }
 
-export const AITwinControls = ({ isActive, onToggle }: AITwinControlsProps) => {
+export const AIAgentControls = ({ isActive, onToggle }: AIAgentControlsProps) => {
   const quickResponses = [
     "I agree with that approach",
     "Could you elaborate on that?",
@@ -18,7 +18,7 @@ export const AITwinControls = ({ isActive, onToggle }: AITwinControlsProps) => {
   return (
     <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10">
       <div className="space-y-6">
-        {/* AI Twin Status */}
+        {/* AI Agent Status */}
         <div className="text-center">
           <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 transition-all ${
             isActive 
@@ -27,7 +27,7 @@ export const AITwinControls = ({ isActive, onToggle }: AITwinControlsProps) => {
           }`}>
             <Bot className="w-10 h-10 text-primary-foreground" />
           </div>
-          <h3 className="font-semibold mb-1">AI Twin</h3>
+          <h3 className="font-semibold mb-1">AI Agent</h3>
           <p className="text-sm text-muted-foreground">
             {isActive ? 'Active & Ready' : 'Standby Mode'}
           </p>
@@ -44,7 +44,7 @@ export const AITwinControls = ({ isActive, onToggle }: AITwinControlsProps) => {
           size="lg"
         >
           <Power className="w-5 h-5 mr-2" />
-          {isActive ? 'Deactivate Twin' : 'Activate Twin'}
+          {isActive ? 'Deactivate Agent' : 'Activate Agent'}
         </Button>
 
         {/* Quick Responses */}

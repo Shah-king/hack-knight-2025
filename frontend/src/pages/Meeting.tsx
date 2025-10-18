@@ -5,12 +5,12 @@ import { Brain, Mic, MicOff, Play, Square, Volume2, WifiOff, MessageSquareText }
 import { useState } from "react";
 import { TranscriptionPanel } from "@/components/meeting/TranscriptionPanel";
 import { SummaryPanel } from "@/components/meeting/SummaryPanel";
-import { AITwinControls } from "@/components/meeting/AITwinControls";
+import { AIAgentControls } from "@/components/meeting/AIAgentControls";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useToast } from "@/hooks/use-toast";
 
 const Meeting = () => {
-  const [isTwinActive, setIsTwinActive] = useState(false);
+  const [isAgentActive, setIsAgentActive] = useState(false);
   const { toast } = useToast();
 
   const {
@@ -177,13 +177,13 @@ const Meeting = () => {
               </Card>
             </div>
 
-            {/* Right Column - AI Twin & Summary */}
+            {/* Right Column - AI Agent & Summary */}
             <div className="space-y-6">
               <Card className="p-0.5 overflow-hidden border-2 border-card-border rounded-lg shadow-lg">
-                <div className={`relative p-6 rounded-[5.5px] h-full ${isTwinActive ? "bg-gradient-primary" : "bg-gradient-muted"}`}>
-                  <AITwinControls
-                    isActive={isTwinActive}
-                    onToggle={() => setIsTwinActive(!isTwinActive)}
+                <div className={`relative p-6 rounded-[5.5px] h-full ${isAgentActive ? "bg-gradient-primary" : "bg-gradient-muted"}`}>
+                  <AIAgentControls
+                    isActive={isAgentActive}
+                    onToggle={() => setIsAgentActive(!isAgentActive)}
                   />
                 </div>
               </Card>

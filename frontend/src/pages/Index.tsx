@@ -71,8 +71,8 @@ const Index = () => {
 
             {/* Subheading */}
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Your AI clone joins meetings, listens in real-time, summarizes key points, 
-              and responds in your own cloned voice when needed.
+              Your personalized AI assistant joins meetings, listens, summarizes key points,
+              responds in any voice, and creates audio lessons.
             </p>
 
             {/* CTA Buttons */}
