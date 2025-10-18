@@ -97,9 +97,20 @@ const Index = () => {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-6xl md:text-7xl font-bold leading-tight"
             >
-              <AnimatedGradientText>
+              <motion.span
+                className="inline-block bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 bg-clip-text text-transparent"
+                animate={{
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
+                style={{ backgroundSize: '200% 200%' }}
+              >
                 Never Miss
-              </AnimatedGradientText>
+              </motion.span>
               {" "}a Meeting
               <br />
               <span className="text-foreground">Again</span>
@@ -149,14 +160,20 @@ const Index = () => {
                   </Button>
                 </SignUpButton>
               )}
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-primary/30 hover:border-primary hover:bg-primary/10 hover:shadow-glow transition-all group"
-              >
-                <Mic className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                Clone Your Voice
-              </Button>
+              <div className="relative group">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-primary/30 hover:border-primary hover:bg-primary/10 hover:shadow-glow transition-all relative z-10"
+                >
+                  <Mic className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Clone Your Voice
+                </Button>
+                {/* Animated voice wave rings */}
+                <span className="absolute inset-0 rounded-lg border-2 border-primary opacity-0 group-hover:opacity-100 animate-ping"></span>
+                <span className="absolute inset-0 rounded-lg border-2 border-cyan-400 opacity-0 group-hover:opacity-75 animate-ping" style={{ animationDelay: '0.2s' }}></span>
+                <span className="absolute inset-0 rounded-lg border border-blue-400 opacity-0 group-hover:opacity-50 animate-pulse blur-sm"></span>
+              </div>
             </motion.div>
 
             {/* Features Grid */}
