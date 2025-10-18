@@ -27,7 +27,7 @@ import healthRouter from "./routes/health.js";
 import transcriptionRouter from "./routes/transcription.js";
 import summaryRouter from "./routes/summary.js";
 import voiceRouter from "./routes/voice.js";
-import twinRouter from "./routes/twin.js";
+import twinRouter from "./routes/assistant.js";
 import recallRouter from "./routes/recall.js";
 
 // Import services and models
