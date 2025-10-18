@@ -49,7 +49,7 @@ export const TranscriptionPanel = ({ isListening, transcriptions }: Transcriptio
             </div>
           ) : (
             transcriptions.map((item) => {
-              const isAI = item.speaker.toLowerCase().includes('ai') || item.speaker.toLowerCase().includes('twin');
+              const isAI = item.speaker.toLowerCase().includes('ai') || item.speaker.toLowerCase().includes('agent');
               const timeAgo = getTimeAgo(item.timestamp);
 
               return (
