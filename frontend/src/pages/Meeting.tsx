@@ -23,6 +23,7 @@ import { useTranscription } from "@/hooks/useTranscription";
 import { useBot } from "@/hooks/useBot";
 import { useToast } from "@/hooks/use-toast";
 import { UserButton } from "@clerk/clerk-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const Meeting = () => {
   const { toast } = useToast();
@@ -160,6 +161,7 @@ const Meeting = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <Badge
                 variant="outline"
                 className={
@@ -189,6 +191,7 @@ const Meeting = () => {
               >
                 End Session
               </Button>
+              <UserButton afterSignOutUrl="/" />
             </div>
           </div>
         </header>

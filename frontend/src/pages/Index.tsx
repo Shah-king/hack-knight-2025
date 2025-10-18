@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Brain, Mic, Sparkles, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import heroBg from "@/assets/bg1.jpg";
 
 const Index = () => {
@@ -34,18 +35,21 @@ const Index = () => {
               SayLess
             </span>
           </div>
-          {isSignedIn ? (
-            <UserButton afterSignOutUrl="/" />
-          ) : (
-            <SignInButton mode="modal">
-              <Button
-                variant="outline"
-                className="border-primary/30 hover:border-primary hover:bg-primary/10 hover:shadow-glow transition-all"
-              >
-                Sign In
-              </Button>
-            </SignInButton>
-          )}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            {isSignedIn ? (
+              <UserButton afterSignOutUrl="/" />
+            ) : (
+              <SignInButton mode="modal">
+                <Button
+                  variant="outline"
+                  className="border-primary/30 hover:border-primary hover:bg-primary/10 hover:shadow-glow transition-all"
+                >
+                  Sign In
+                </Button>
+              </SignInButton>
+            )}
+          </div>
         </nav>
 
         {/* Hero Section */}
