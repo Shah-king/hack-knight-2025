@@ -1,75 +1,126 @@
 import express from 'express';
+import aiService from '../services/aiService.js';
+import elevenlabsService from '../services/elevenlabsService.js';
+import zoomService from '../services/zoomService.js';
 
 const router = express.Router();
 
-// Activate AI Twin
-router.post('/activate', async (req, res) => {
+// Get AI suggested responses based on conversation context
+router.post('/suggestions', async (req, res) => {
   try {
-    const { meetingId, userId, voiceId } = req.body;
+    const { transcriptions, count } = req.body;
 
-    // TODO: Initialize AI Twin session
+    if (!transcriptions || transcriptions.length === 0) {
+      return res.status(400).json({
+        error: 'Transcriptions are required'
+      });
+    }
+
+    // Generate smart replies using Gemini
+    const suggestions = await aiService.generateSmartReplies(
+      transcriptions,
+      count || 3
+    );
+
     res.json({
       success: true,
-      twinId: 'mock-twin-id',
-      status: 'active',
-      message: 'AI Twin activated'
+      suggestions
     });
   } catch (error) {
+    console.error('Error generating suggestions:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Deactivate AI Twin
-router.post('/deactivate', async (req, res) => {
+// Generate AI response based on context
+router.post('/generate-response', async (req, res) => {
   try {
-    const { twinId } = req.body;
+    const { transcriptions, prompt } = req.body;
 
-    // TODO: Deactivate AI Twin session
+    if (!transcriptions || transcriptions.length === 0) {
+      return res.status(400).json({
+        error: 'Transcriptions are required'
+      });
+    }
+
+    // Generate response using Gemini
+    const response = await aiService.generateResponse(transcriptions, prompt);
+
     res.json({
       success: true,
-      twinId,
-      status: 'inactive',
-      message: 'AI Twin deactivated'
+      response
     });
   } catch (error) {
+    console.error('Error generating response:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Send preset response
-router.post('/respond', async (req, res) => {
+// Make bot speak with AI-generated or preset response
+router.post('/speak', async (req, res) => {
   try {
-    const { twinId, responseText, voiceId } = req.body;
+    const { botId, text, voiceId, generateResponse, transcriptions } = req.body;
+
+    if (!botId) {
+      return res.status(400).json({ error: 'Bot ID is required' });
+    }
+
+    let responseText = text;
+
+    // If generateResponse is true, use AI to generate response
+    if (generateResponse && transcriptions) {
+      responseText = await aiService.generateResponse(transcriptions);
+    }
 
     if (!responseText) {
       return res.status(400).json({ error: 'Response text is required' });
     }
 
-    // TODO: Generate and play audio response
+    // Generate audio using ElevenLabs
+    const audioBuffer = await elevenlabsService.textToSpeech({
+      text: responseText,
+      voiceId
+    });
+
+    // Inject audio into Zoom meeting
+    const success = await zoomService.injectAudio(botId, audioBuffer);
+
+    if (!success) {
+      return res.status(500).json({
+        error: 'Failed to inject audio into meeting'
+      });
+    }
+
     res.json({
       success: true,
-      audioUrl: 'mock-audio-url',
-      responseText
+      text: responseText,
+      audioSize: audioBuffer.length
     });
   } catch (error) {
+    console.error('Error making bot speak:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get suggested responses based on context
-router.post('/suggestions', async (req, res) => {
+// Analyze sentiment of conversation
+router.post('/analyze-sentiment', async (req, res) => {
   try {
-    const { transcript, context } = req.body;
+    const { transcriptions } = req.body;
 
-    // TODO: Use LLM to generate smart reply suggestions
+    if (!transcriptions || transcriptions.length === 0) {
+      return res.status(400).json({
+        error: 'Transcriptions are required'
+      });
+    }
+
+    const analysis = await aiService.analyzeSentiment(transcriptions);
+
     res.json({
-      suggestions: [
-        'I agree with that approach',
-        'Could you elaborate on that?',
-        'Let me check on that and get back to you'
-      ]
+      success: true,
+      analysis
     });
   } catch (error) {
+    console.error('Error analyzing sentiment:', error);
     res.status(500).json({ error: error.message });
   }
 });
