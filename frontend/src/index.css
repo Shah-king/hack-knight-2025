@@ -8,6 +8,59 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Light mode colors */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 190 95% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 270 80% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 280 90% 65%;
+    --accent-foreground: 222.2 84% 4.9%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 190 95% 50%;
+
+    --radius: 0.75rem;
+
+    /* Futuristic gradients - light mode */
+    --gradient-primary: linear-gradient(135deg, hsl(190 95% 50%), hsl(270 80% 60%));
+    --gradient-aurora: linear-gradient(135deg, hsl(190 95% 50% / 0.15), hsl(270 80% 60% / 0.15), hsl(280 90% 65% / 0.15));
+    --gradient-glow: radial-gradient(circle, hsl(190 95% 50% / 0.1), transparent 70%);
+    --gradient-muted: linear-gradient(135deg, hsl(210 40% 98%), hsl(220 40% 96%));
+    
+    /* Glass effects - light mode */
+    --glass-bg: hsl(0 0% 100% / 0.7);
+    --glass-border: hsl(0 0% 0% / 0.1);
+    --card-border: hsl(214.3 31.8% 91.4%);
+    
+    /* Shadows with glow - light mode */
+    --shadow-glow: 0 0 30px hsl(190 95% 50% / 0.2);
+    --shadow-glow-strong: 0 0 50px hsl(190 95% 50% / 0.35);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    /* Dark mode colors */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
@@ -36,26 +89,20 @@ All colors MUST be HSL.
     --input: 240 5% 15%;
     --ring: 190 95% 50%;
 
-    --radius: 0.75rem;
-
-    /* Futuristic gradients */
+    /* Futuristic gradients - dark mode */
     --gradient-primary: linear-gradient(135deg, hsl(190 95% 50%), hsl(270 80% 60%));
     --gradient-aurora: linear-gradient(135deg, hsl(190 95% 50% / 0.2), hsl(270 80% 60% / 0.2), hsl(280 90% 65% / 0.2));
     --gradient-glow: radial-gradient(circle, hsl(190 95% 50% / 0.15), transparent 70%);
     --gradient-muted: linear-gradient(135deg, hsl(240 5% 15%), hsl(240 5% 10%));
     
-    /* Glass effects */
+    /* Glass effects - dark mode */
     --glass-bg: hsl(240 8% 8% / 0.6);
     --glass-border: hsl(0 0% 100% / 0.1);
     --card-border: hsl(240 5% 25%);
     
-    /* Shadows with glow */
+    /* Shadows with glow - dark mode */
     --shadow-glow: 0 0 30px hsl(190 95% 50% / 0.3);
     --shadow-glow-strong: 0 0 50px hsl(190 95% 50% / 0.5);
-    
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 }
 
@@ -84,6 +131,129 @@ All colors MUST be HSL.
   
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-primary/50;
+  }
+  
+  /* Light mode Clerk defaults (base styles) */
+  :where(.cl-userButtonPopoverCard, .cl-card, .cl-modalContent) {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    color: hsl(222.2 84% 4.9%) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+  
+  :where(.cl-userButtonPopoverFooter) {
+    background: rgba(240, 242, 245, 0.8) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+  
+  :where(.cl-headerTitle, .cl-userPreviewMainIdentifier, .cl-formFieldLabel, .cl-userButtonPopoverActionButtonText) {
+    color: hsl(222.2 84% 4.9%) !important;
+  }
+  
+  :where(.cl-userPreviewSecondaryIdentifier, .cl-headerSubtitle, .cl-formFieldInputShowPasswordButton, .cl-userButtonPopoverFooterLink) {
+    color: hsl(215.4 16.3% 46.9%) !important;
+  }
+  
+  :where(.cl-formFieldInput, .cl-socialButtonsBlockButton) {
+    background: hsl(0 0% 100%) !important;
+    color: hsl(222.2 84% 4.9%) !important;
+    border-color: hsl(214.3 31.8% 91.4%) !important;
+  }
+  
+  :where(.cl-userButtonPopoverActionButton):hover {
+    background: hsl(210 40% 96.1%) !important;
+  }
+  
+  /* Dark mode Clerk overrides */
+  .dark :where(.cl-userButtonPopoverCard, .cl-card, .cl-modalContent) {
+    background: rgba(15, 15, 20, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    color: hsl(0 0% 98%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  .dark :where(.cl-userButtonPopoverFooter) {
+    background: rgba(10, 10, 15, 0.8) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+  
+  .dark :where(.cl-headerTitle, .cl-userPreviewMainIdentifier, .cl-formFieldLabel, .cl-userButtonPopoverActionButtonText) {
+    color: hsl(0 0% 98%) !important;
+  }
+  
+  .dark :where(.cl-userPreviewSecondaryIdentifier, .cl-headerSubtitle, .cl-formFieldInputShowPasswordButton, .cl-userButtonPopoverFooterLink) {
+    color: hsl(240 5% 64.9%) !important;
+  }
+  
+  .dark :where(.cl-formFieldInput, .cl-socialButtonsBlockButton) {
+    background: hsl(240 5% 15%) !important;
+    color: hsl(0 0% 98%) !important;
+    border-color: hsl(240 5% 25%) !important;
+  }
+  
+  .dark :where(.cl-userButtonPopoverActionButton):hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+  
+  /* Input fields in dark mode */
+  .dark :where(.cl-formFieldInput) {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+  
+  /* Remove border from user profile button - FOREVER */
+  .cl-userButtonBox,
+  .cl-userButtonBox *,
+  .cl-userButtonTrigger,
+  .cl-userButtonTrigger *,
+  .cl-avatarBox,
+  .cl-avatarBox *,
+  .cl-avatarImage,
+  .cl-avatarImage *,
+  button[data-clerk-user-button],
+  button[data-clerk-user-button] *,
+  div[role="button"][aria-haspopup="menu"],
+  img[class*="cl-avatar"],
+  img[class*="Avatar"] {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
+  }
+  
+  /* Remove focus states that might add borders */
+  .cl-userButtonBox:focus,
+  .cl-userButtonBox:focus-visible,
+  .cl-userButtonTrigger:focus,
+  .cl-userButtonTrigger:focus-visible,
+  .cl-avatarBox:focus,
+  .cl-avatarBox:focus-visible,
+  button[data-clerk-user-button]:focus,
+  button[data-clerk-user-button]:focus-visible {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
+  }
+  
+  /* Light mode avatar styling (default) */
+  .cl-avatarBox,
+  .cl-avatarImage,
+  .cl-userButtonAvatarBox,
+  .cl-userButtonAvatarImage {
+    background: hsl(0 0% 100%) !important;
+    background-color: hsl(0 0% 100%) !important;
+  }
+  
+  /* Dark mode avatar styling */
+  .dark .cl-avatarBox,
+  .dark .cl-avatarImage,
+  .dark .cl-userButtonAvatarBox,
+  .dark .cl-userButtonAvatarImage {
+    background: hsl(240 8% 8%) !important;
+    background-color: hsl(240 8% 8%) !important;
   }
 }
 
