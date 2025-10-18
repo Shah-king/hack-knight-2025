@@ -1,15 +1,66 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Mic, MicOff, Play, Square, Volume2 } from "lucide-react";
+import { Brain, Mic, MicOff, Play, Square, Volume2, WifiOff } from "lucide-react";
 import { useState } from "react";
 import { TranscriptionPanel } from "@/components/meeting/TranscriptionPanel";
 import { SummaryPanel } from "@/components/meeting/SummaryPanel";
 import { AITwinControls } from "@/components/meeting/AITwinControls";
+import { useTranscription } from "@/hooks/useTranscription";
+import { useToast } from "@/hooks/use-toast";
 
 const Meeting = () => {
-  const [isListening, setIsListening] = useState(false);
   const [isTwinActive, setIsTwinActive] = useState(false);
+  const { toast } = useToast();
+
+  const {
+    transcriptions,
+    isConnected,
+    isTranscribing,
+    isCapturing,
+    hasPermission,
+    error,
+    startTranscription,
+    stopTranscription,
+    requestPermission
+  } = useTranscription();
+
+  // Show errors as toasts
+  if (error) {
+    toast({
+      title: "Transcription Error",
+      description: error,
+      variant: "destructive"
+    });
+  }
+
+  // Handle start/stop listening
+  const handleToggleListening = async () => {
+    if (isTranscribing) {
+      stopTranscription();
+    } else {
+      // Request permission first if needed
+      if (hasPermission === null) {
+        const granted = await requestPermission();
+        if (!granted) {
+          toast({
+            title: "Microphone Access Required",
+            description: "Please allow microphone access to use transcription",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      const started = await startTranscription();
+      if (started) {
+        toast({
+          title: "Transcription Started",
+          description: "Your voice is being transcribed in real-time"
+        });
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,11 +83,29 @@ const Meeting = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <Badge variant="outline" className="border-primary/30 text-primary">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow mr-2" />
-                Live Demo
+              <Badge
+                variant="outline"
+                className={isConnected ? "border-primary/30 text-primary" : "border-destructive/30 text-destructive"}
+              >
+                {isConnected ? (
+                  <>
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow mr-2" />
+                    Connected
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-3 h-3 mr-2" />
+                    Disconnected
+                  </>
+                )}
               </Badge>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (isTranscribing) stopTranscription();
+                }}
+              >
                 End Session
               </Button>
             </div>
@@ -48,7 +117,10 @@ const Meeting = () => {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Left Column - Transcription */}
             <div className="lg:col-span-2 space-y-6">
-              <TranscriptionPanel isListening={isListening} />
+              <TranscriptionPanel
+                isListening={isTranscribing}
+                transcriptions={transcriptions}
+              />
               
               {/* Control Bar */}
               <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10">
@@ -56,11 +128,12 @@ const Meeting = () => {
                   <div className="flex items-center gap-4">
                     <Button
                       size="lg"
-                      variant={isListening ? "destructive" : "default"}
-                      onClick={() => setIsListening(!isListening)}
-                      className={!isListening ? "bg-gradient-primary hover:shadow-glow-strong" : ""}
+                      variant={isTranscribing ? "destructive" : "default"}
+                      onClick={handleToggleListening}
+                      disabled={!isConnected}
+                      className={!isTranscribing ? "bg-gradient-primary hover:shadow-glow-strong" : ""}
                     >
-                      {isListening ? (
+                      {isTranscribing ? (
                         <>
                           <Square className="w-5 h-5 mr-2" />
                           Stop Listening
@@ -73,7 +146,7 @@ const Meeting = () => {
                       )}
                     </Button>
 
-                    {isListening && (
+                    {isCapturing && (
                       <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
                         <div className="flex gap-1">
                           {[...Array(4)].map((_, i) => (
@@ -97,7 +170,7 @@ const Meeting = () => {
                       <Volume2 className="w-4 h-4" />
                     </Button>
                     <Button variant="outline" size="icon">
-                      {isListening ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                      {isCapturing ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
