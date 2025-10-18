@@ -5,21 +5,31 @@ Express.js backend for the EchoTwin AI Meeting Assistant.
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Copy `.env.example` to `.env` and fill in your API keys:
+
 ```bash
 cp .env.example .env
 ```
 
 3. Required API Keys:
-- **Clerk**: Sign up at https://clerk.com and get your publishable and secret keys
+
+- **Zoom API (Server-to-Server OAuth)**:
+  - Go to https://marketplace.zoom.us/
+  - Click "Develop" → "Build App" → "Server-to-Server OAuth"
+  - Get your Account ID, Client ID, and Client Secret
+  - Set: `ZOOM_ACCOUNT_ID`, `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET`
+- **Deepgram**: Get API key from https://console.deepgram.com/
 - **ElevenLabs**: Get API key from https://elevenlabs.io
-- **OpenRouter**: Get API key from https://openrouter.ai
+- **Google Gemini**: Get API key from https://makersuite.google.com/app/apikey
+- **Clerk** (Optional): Sign up at https://clerk.com for authentication
 
 4. Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -29,24 +39,29 @@ The server will run on `http://localhost:3001`
 ## API Routes
 
 ### Health Check
+
 - `GET /api/health` - Server health status
 
 ### Transcription
+
 - `GET /api/transcription/:meetingId` - Get transcription history
 - `POST /api/transcription/start` - Start real-time transcription
 - `POST /api/transcription/stop` - Stop transcription
 
 ### Summary
+
 - `GET /api/summary/:meetingId` - Get meeting summary
 - `POST /api/summary/generate` - Generate summary from transcript
 - `POST /api/summary/export` - Export summary
 
 ### Voice
+
 - `POST /api/voice/clone` - Clone voice from audio samples
 - `POST /api/voice/speak` - Generate speech from text
 - `GET /api/voice/list/:userId` - Get user's cloned voices
 
 ### AI Twin
+
 - `POST /api/twin/activate` - Activate AI Twin
 - `POST /api/twin/deactivate` - Deactivate AI Twin
 - `POST /api/twin/respond` - Send preset response
@@ -57,6 +72,7 @@ The server will run on `http://localhost:3001`
 Connect to `ws://localhost:3001` for real-time features:
 
 ### Message Types
+
 - `audio_stream` - Stream audio for transcription
 - `ping` - Keep-alive ping
 

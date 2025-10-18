@@ -1,51 +1,96 @@
 import express from 'express';
+import aiService from '../services/aiService.js';
+import Meeting from '../models/Meeting.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
-// Get meeting summary
+// Get meeting summary from database
 router.get('/:meetingId', async (req, res) => {
   try {
     const { meetingId } = req.params;
 
-    // TODO: Implement real AI summarization
+    // If MongoDB is connected, fetch from database
+    if (mongoose.connection.readyState === 1) {
+      const meeting = await Meeting.findById(meetingId);
+
+      if (!meeting) {
+        return res.status(404).json({ error: 'Meeting not found' });
+      }
+
+      // If summary exists, return it
+      if (meeting.summary) {
+        return res.json({
+          meetingId,
+          summary: meeting.summary
+        });
+      }
+
+      // If no summary but has transcriptions, generate one
+      if (meeting.transcriptions && meeting.transcriptions.length > 0) {
+        const summary = await aiService.generateSummary(meeting.transcriptions);
+
+        // Save summary to database
+        meeting.summary = summary;
+        await meeting.save();
+
+        return res.json({
+          meetingId,
+          summary
+        });
+      }
+    }
+
+    // Return empty summary if no data
     res.json({
       meetingId,
       summary: {
-        keyPoints: [
-          { text: 'Q4 product roadmap discussion', completed: true },
-          { text: 'Marketing timeline finalized', completed: true },
-          { text: 'Budget approval pending', completed: false }
-        ],
-        actionItems: [
-          {
-            text: 'Send Q4 timeline to stakeholders',
-            dueDate: 'This week',
-            assignee: null
-          }
-        ],
-        generatedAt: new Date().toISOString()
+        summary: 'No transcriptions available yet',
+        keyPoints: [],
+        actionItems: [],
+        decisions: []
       }
     });
   } catch (error) {
+    console.error('Error getting summary:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Generate summary from transcript
+// Generate summary from transcript array
 router.post('/generate', async (req, res) => {
   try {
-    const { meetingId, transcript } = req.body;
+    const { meetingId, transcriptions } = req.body;
 
-    // TODO: Call OpenRouter/Gemini API for summarization
+    if (!transcriptions || transcriptions.length === 0) {
+      return res.status(400).json({
+        error: 'Transcriptions are required'
+      });
+    }
+
+    // Generate summary using Gemini
+    const summary = await aiService.generateSummary(transcriptions);
+
+    // If meetingId provided and DB connected, save to database
+    if (meetingId && mongoose.connection.readyState === 1) {
+      try {
+        const meeting = await Meeting.findById(meetingId);
+        if (meeting) {
+          meeting.summary = summary;
+          await meeting.save();
+        }
+      } catch (dbError) {
+        console.warn('Failed to save summary to DB:', dbError.message);
+      }
+    }
+
     res.json({
       success: true,
       meetingId,
-      summary: {
-        keyPoints: [],
-        actionItems: []
-      }
+      summary
     });
   } catch (error) {
+    console.error('Error generating summary:', error);
     res.status(500).json({ error: error.message });
   }
 });

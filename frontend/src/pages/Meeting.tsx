@@ -1,20 +1,32 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Mic, MicOff, Play, Square, Volume2, WifiOff, MessageSquareText } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Brain,
+  Mic,
+  MicOff,
+  Play,
+  Square,
+  Volume2,
+  WifiOff,
+  Rocket,
+} from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TranscriptionPanel } from "@/components/meeting/TranscriptionPanel";
 import { SummaryPanel } from "@/components/meeting/SummaryPanel";
-import { AIAgentControls } from "@/components/meeting/AIAgentControls";
+import { LaunchBot } from "@/components/meeting/LaunchBot";
+import { BotControls } from "@/components/meeting/BotControls";
 import { useTranscription } from "@/hooks/useTranscription";
+import { useBot } from "@/hooks/useBot";
 import { useToast } from "@/hooks/use-toast";
 
 const Meeting = () => {
-  const [isAgentActive, setIsAgentActive] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"mic" | "bot">("mic");
 
+  // Transcription (microphone) hooks
   const {
     transcriptions,
     isConnected,
@@ -24,19 +36,23 @@ const Meeting = () => {
     error,
     startTranscription,
     stopTranscription,
-    requestPermission
+    requestPermission,
   } = useTranscription();
+
+  // Bot (Zoom integration) hooks
+  const { botData, hasActiveBot, leaveMeeting, muteBot, unmuteBot, speak } =
+    useBot();
 
   // Show errors as toasts
   if (error) {
     toast({
       title: "Transcription Error",
       description: error,
-      variant: "destructive"
+      variant: "destructive",
     });
   }
 
-  // Handle start/stop listening
+  // Handle start/stop listening (microphone mode)
   const handleToggleListening = async () => {
     if (isTranscribing) {
       stopTranscription();
@@ -48,7 +64,7 @@ const Meeting = () => {
           toast({
             title: "Microphone Access Required",
             description: "Please allow microphone access to use transcription",
-            variant: "destructive"
+            variant: "destructive",
           });
           return;
         }
@@ -58,9 +74,62 @@ const Meeting = () => {
       if (started) {
         toast({
           title: "Transcription Started",
-          description: "Your voice is being transcribed in real-time"
+          description: "Your voice is being transcribed in real-time",
         });
       }
+    }
+  };
+
+  // Handle bot launched
+  const handleBotLaunched = (botData: any) => {
+    toast({
+      title: "AI Assistant Launched",
+      description: `Bot "${botData.botName}" is joining meeting ${botData.meetingNumber}`,
+    });
+    setActiveTab("bot"); // Switch to bot tab
+  };
+
+  // Handle bot leave
+  const handleBotLeave = async () => {
+    const success = await leaveMeeting();
+    if (success) {
+      toast({
+        title: "AI Assistant Left",
+        description: "Bot has left the meeting",
+      });
+      setActiveTab("mic");
+    }
+  };
+
+  // Handle bot mute/unmute
+  const handleBotMute = async () => {
+    const success = await muteBot();
+    if (success) {
+      toast({
+        title: "Bot Muted",
+        description: "AI Assistant is now muted",
+      });
+    }
+  };
+
+  const handleBotUnmute = async () => {
+    const success = await unmuteBot();
+    if (success) {
+      toast({
+        title: "Bot Unmuted",
+        description: "AI Assistant can now speak",
+      });
+    }
+  };
+
+  // Handle bot speak
+  const handleBotSpeak = async (text: string) => {
+    const success = await speak(text);
+    if (success) {
+      toast({
+        title: "Bot Speaking",
+        description: text,
+      });
     }
   };
 
@@ -87,7 +156,11 @@ const Meeting = () => {
             <div className="flex items-center gap-3">
               <Badge
                 variant="outline"
-                className={isConnected ? "border-primary/30 text-primary" : "border-destructive/30 text-destructive"}
+                className={
+                  isConnected
+                    ? "border-primary/30 text-primary"
+                    : "border-destructive/30 text-destructive"
+                }
               >
                 {isConnected ? (
                   <>
@@ -123,7 +196,7 @@ const Meeting = () => {
                 isListening={isTranscribing}
                 transcriptions={transcriptions}
               />
-              
+
               {/* Control Bar */}
               <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10">
                 <div className="flex items-center justify-between">
@@ -133,7 +206,11 @@ const Meeting = () => {
                       variant={isTranscribing ? "destructive" : "default"}
                       onClick={handleToggleListening}
                       disabled={!isConnected}
-                      className={!isTranscribing ? "bg-gradient-primary hover:shadow-glow-strong" : ""}
+                      className={
+                        !isTranscribing
+                          ? "bg-gradient-primary hover:shadow-glow-strong"
+                          : ""
+                      }
                     >
                       {isTranscribing ? (
                         <>
@@ -157,12 +234,14 @@ const Meeting = () => {
                               className="w-1 bg-primary rounded-full animate-pulse-glow"
                               style={{
                                 height: `${12 + Math.random() * 12}px`,
-                                animationDelay: `${i * 0.1}s`
+                                animationDelay: `${i * 0.1}s`,
                               }}
                             />
                           ))}
                         </div>
-                        <span className="text-sm text-primary font-medium">Listening...</span>
+                        <span className="text-sm text-primary font-medium">
+                          Listening...
+                        </span>
                       </div>
                     )}
                   </div>
@@ -172,23 +251,84 @@ const Meeting = () => {
                       <Volume2 className="w-4 h-4" />
                     </Button>
                     <Button variant="outline" size="icon">
-                      {isCapturing ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                      {isCapturing ? (
+                        <Mic className="w-4 h-4" />
+                      ) : (
+                        <MicOff className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
               </Card>
             </div>
 
-            {/* Right Column - AI Agent & Summary */}
+            {/* Right Column - AI Bot & Summary */}
             <div className="space-y-6">
-              <Card className="p-0.5 overflow-hidden border-2 border-card-border rounded-lg shadow-lg">
-                <div className={`relative p-6 rounded-[5.5px] h-full ${isAgentActive ? "bg-gradient-primary" : "bg-gradient-muted"}`}>
-                  <AIAgentControls
-                    isActive={isAgentActive}
-                    onToggle={() => setIsAgentActive(!isAgentActive)}
-                  />
-                </div>
-              </Card>
+              <Tabs
+                value={activeTab}
+                onValueChange={(v) => setActiveTab(v as "mic" | "bot")}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="mic" className="gap-2">
+                    <Mic className="w-4 h-4" />
+                    Microphone
+                  </TabsTrigger>
+                  <TabsTrigger value="bot" className="gap-2">
+                    <Rocket className="w-4 h-4" />
+                    Bot Mode
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="mic" className="mt-4">
+                  <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10">
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+                        <Mic className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Microphone Mode</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Currently transcribing from your microphone. Launch a
+                          bot to join Zoom meetings.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setActiveTab("bot")}
+                        variant="outline"
+                        className="border-primary/30 hover:border-primary"
+                      >
+                        <Rocket className="w-4 h-4 mr-2" />
+                        Launch Bot Instead
+                      </Button>
+                    </div>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="bot" className="mt-4">
+                  {hasActiveBot && botData ? (
+                    <BotControls
+                      botId={botData.botId}
+                      botStatus={botData}
+                      onLeave={handleBotLeave}
+                      onMute={handleBotMute}
+                      onUnmute={handleBotUnmute}
+                      onSpeak={handleBotSpeak}
+                    />
+                  ) : (
+                    <LaunchBot
+                      onBotLaunched={handleBotLaunched}
+                      onError={(error) => {
+                        toast({
+                          title: "Launch Failed",
+                          description: error,
+                          variant: "destructive",
+                        });
+                      }}
+                    />
+                  )}
+                </TabsContent>
+              </Tabs>
+
               <SummaryPanel />
             </div>
           </div>
