@@ -9,6 +9,7 @@ import { SummaryPanel } from "@/components/meeting/SummaryPanel";
 import { AIAgentControls } from "@/components/meeting/AIAgentControls";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useToast } from "@/hooks/use-toast";
+import { UserButton } from "@clerk/clerk-react";
 
 const Meeting = () => {
   const [isAgentActive, setIsAgentActive] = useState(false);
