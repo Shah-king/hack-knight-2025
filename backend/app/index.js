@@ -12,9 +12,6 @@ if (result.error) {
   console.error("❌ Error loading .env:", result.error);
 } else {
   console.log("✅ .env file loaded successfully");
-  console.log("🔑 ZOOM_ACCOUNT_ID:", process.env.ZOOM_ACCOUNT_ID ? "✓" : "✗");
-  console.log("🔑 ZOOM_CLIENT_ID:", process.env.ZOOM_CLIENT_ID ? "✓" : "✗");
-  console.log("🔑 ZOOM_CLIENT_SECRET:", process.env.ZOOM_CLIENT_SECRET ? "✓" : "✗");
 }
 
 // Now import everything else (after env vars are loaded)
@@ -31,11 +28,11 @@ import transcriptionRouter from "./routes/transcription.js";
 import summaryRouter from "./routes/summary.js";
 import voiceRouter from "./routes/voice.js";
 import twinRouter from "./routes/twin.js";
-import zoomRouter from "./routes/zoom.js";
+import recallRouter from "./routes/recall.js";
 
 // Import services and models
 import deepgramService from "./services/deepgramService.js";
-import zoomService from "./services/zoomService.js";
+import recallService from "./services/recallService.js";
 import aiService from "./services/aiService.js";
 import elevenlabsService from "./services/elevenlabsService.js";
 import Meeting from "./models/Meeting.js";
@@ -44,9 +41,9 @@ import mongoose from "mongoose";
 // Validate service configurations
 console.log("\n📋 Service Configuration Status:");
 console.log(
-  zoomService.validateConfig()
-    ? "✅ Zoom API (Server-to-Server OAuth) configured"
-    : "⚠️  Zoom API not configured - add ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET"
+  recallService.validateConfig()
+    ? "✅ Recall.ai Meeting Bot configured (supports Zoom, Meet, Teams, Webex, Slack)"
+    : "⚠️  Recall.ai not configured - add RECALL_API_KEY and RECALL_REGION"
 );
 console.log(
   aiService.validateConfig()
@@ -107,7 +104,7 @@ app.use("/api/transcription", transcriptionRouter);
 app.use("/api/summary", summaryRouter);
 app.use("/api/voice", voiceRouter);
 app.use("/api/twin", twinRouter);
-app.use("/api/zoom", zoomRouter);
+app.use("/api/recall", recallRouter);
 
 // Store WebSocket metadata for each connection
 const wsClients = new Map();
@@ -291,11 +288,11 @@ wss.on("connection", (ws) => {
           // Get bot by botId or userId
           let bot = null;
           if (botId) {
-            bot = zoomService.getBotStatus(botId);
+            bot = await recallService.getBotStatus(botId);
           } else if (userId) {
-            const userBot = zoomService.getBotByUserId(userId);
+            const userBot = recallService.getBotByUserId(userId);
             if (userBot) {
-              bot = zoomService.getBotStatus(userBot.botId);
+              bot = await recallService.getBotStatus(userBot.botId);
             }
           }
 
@@ -343,24 +340,21 @@ wss.on("connection", (ws) => {
   });
 });
 
-// Zoom service event handlers - broadcast bot events to all connected clients
-zoomService.on("bot-joined", (bot) => {
-  console.log(`📡 Broadcasting bot-joined event for bot ${bot.botId}`);
+// Recall.ai service event handlers - broadcast bot events to all connected clients
+recallService.on("bot-created", ({ botId, userId, status }) => {
+  console.log(`📡 Broadcasting bot-created event for bot ${botId}`);
   wss.clients.forEach((client) => {
     if (client.readyState === 1) {
-      // WebSocket.OPEN
       const metadata = wsClients.get(client);
       // Send to the user who owns this bot
-      if (metadata && bot.userId) {
+      if (metadata) {
         client.send(
           JSON.stringify({
-            type: "bot_joined",
+            type: "bot_created",
             data: {
-              botId: bot.botId,
-              meetingNumber: bot.meetingNumber,
-              botName: bot.botName,
-              status: bot.status,
-              joinedAt: bot.joinedAt,
+              botId,
+              userId,
+              status,
             },
           })
         );
@@ -369,18 +363,18 @@ zoomService.on("bot-joined", (bot) => {
   });
 });
 
-zoomService.on("bot-left", (bot) => {
-  console.log(`📡 Broadcasting bot-left event for bot ${bot.botId}`);
+recallService.on("bot-left", ({ botId, userId }) => {
+  console.log(`📡 Broadcasting bot-left event for bot ${botId}`);
   wss.clients.forEach((client) => {
     if (client.readyState === 1) {
       const metadata = wsClients.get(client);
-      if (metadata && bot.userId) {
+      if (metadata) {
         client.send(
           JSON.stringify({
             type: "bot_left",
             data: {
-              botId: bot.botId,
-              meetingNumber: bot.meetingNumber,
+              botId,
+              userId,
             },
           })
         );
@@ -389,41 +383,26 @@ zoomService.on("bot-left", (bot) => {
   });
 });
 
-zoomService.on("bot-muted", ({ botId }) => {
+// Recall.ai transcript event handler - broadcast transcripts to frontend
+recallService.on("transcript", (transcript) => {
   wss.clients.forEach((client) => {
     if (client.readyState === 1) {
-      client.send(
-        JSON.stringify({
-          type: "bot_muted",
-          data: { botId },
-        })
-      );
-    }
-  });
-});
-
-zoomService.on("bot-unmuted", ({ botId }) => {
-  wss.clients.forEach((client) => {
-    if (client.readyState === 1) {
-      client.send(
-        JSON.stringify({
-          type: "bot_unmuted",
-          data: { botId },
-        })
-      );
-    }
-  });
-});
-
-zoomService.on("audio-injected", ({ botId, size }) => {
-  wss.clients.forEach((client) => {
-    if (client.readyState === 1) {
-      client.send(
-        JSON.stringify({
-          type: "bot_spoke",
-          data: { botId, audioSize: size },
-        })
-      );
+      const metadata = wsClients.get(client);
+      // Send to the user who owns this bot
+      if (metadata) {
+        client.send(
+          JSON.stringify({
+            type: "transcription",
+            data: {
+              speaker: transcript.speaker,
+              text: transcript.text,
+              isFinal: transcript.isFinal,
+              timestamp: transcript.timestamp,
+              confidence: transcript.confidence,
+            },
+          })
+        );
+      }
     }
   });
 });
@@ -460,8 +439,8 @@ server.listen(PORT, () => {
 process.on("SIGTERM", async () => {
   console.log("SIGTERM signal received: closing HTTP server");
 
-  // Clean up zoom bots
-  await zoomService.cleanup();
+  // Clean up recall bots
+  await recallService.cleanup();
 
   server.close(() => {
     console.log("HTTP server closed");

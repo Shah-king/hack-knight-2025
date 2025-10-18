@@ -1,7 +1,6 @@
 import express from 'express';
 import aiService from '../services/aiService.js';
 import elevenlabsService from '../services/elevenlabsService.js';
-import zoomService from '../services/zoomService.js';
 
 const router = express.Router();
 
@@ -82,19 +81,17 @@ router.post('/speak', async (req, res) => {
       voiceId
     });
 
-    // Inject audio into Zoom meeting
-    const success = await zoomService.injectAudio(botId, audioBuffer);
-
-    if (!success) {
-      return res.status(500).json({
-        error: 'Failed to inject audio into meeting'
-      });
-    }
+    // Note: Audio injection with Recall.ai requires Output Media API
+    // This endpoint currently returns the audio for future implementation
+    // TODO: Implement Recall.ai Output Media API integration
 
     res.json({
       success: true,
       text: responseText,
-      audioSize: audioBuffer.length
+      audio: audioBuffer.toString('base64'),
+      audioSize: audioBuffer.length,
+      botId,
+      message: 'Audio generated. Output Media API integration pending.'
     });
   } catch (error) {
     console.error('Error making bot speak:', error);
