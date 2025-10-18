@@ -1,17 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Mic, MicOff, Play, Square, Volume2, WifiOff } from "lucide-react";
+import { Brain, Mic, MicOff, Play, Square, Volume2, WifiOff, MessageSquareText } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TranscriptionPanel } from "@/components/meeting/TranscriptionPanel";
 import { SummaryPanel } from "@/components/meeting/SummaryPanel";
-import { AITwinControls } from "@/components/meeting/AITwinControls";
+import { AIAgentControls } from "@/components/meeting/AIAgentControls";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useToast } from "@/hooks/use-toast";
 
 const Meeting = () => {
-  const [isTwinActive, setIsTwinActive] = useState(false);
+  const [isAgentActive, setIsAgentActive] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const {
     transcriptions,
@@ -72,12 +74,12 @@ const Meeting = () => {
         {/* Header */}
         <header className="border-b border-border/50 backdrop-blur-glass bg-card/30">
           <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
               <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Brain className="w-6 h-6 text-primary-foreground" />
+                <MessageSquareText className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">EchoTwin</h1>
+                <h1 className="text-xl font-bold">SayLess</h1>
                 <p className="text-xs text-muted-foreground">Meeting Session</p>
               </div>
             </div>
@@ -177,12 +179,16 @@ const Meeting = () => {
               </Card>
             </div>
 
-            {/* Right Column - AI Twin & Summary */}
+            {/* Right Column - AI Agent & Summary */}
             <div className="space-y-6">
-              <AITwinControls 
-                isActive={isTwinActive} 
-                onToggle={() => setIsTwinActive(!isTwinActive)} 
-              />
+              <Card className="p-0.5 overflow-hidden border-2 border-card-border rounded-lg shadow-lg">
+                <div className={`relative p-6 rounded-[5.5px] h-full ${isAgentActive ? "bg-gradient-primary" : "bg-gradient-muted"}`}>
+                  <AIAgentControls
+                    isActive={isAgentActive}
+                    onToggle={() => setIsAgentActive(!isAgentActive)}
+                  />
+                </div>
+              </Card>
               <SummaryPanel />
             </div>
           </div>

@@ -52,6 +52,7 @@ export default {
         'gradient-primary': 'var(--gradient-primary)',
         'gradient-aurora': 'var(--gradient-aurora)',
         'gradient-glow': 'var(--gradient-glow)',
+        'gradient-muted': 'var(--gradient-muted)',
       },
       backdropBlur: {
         'glass': '12px',
