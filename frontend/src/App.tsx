@@ -17,7 +17,66 @@ if (!clerkPubKey) {
 }
 
 const App = () => (
-  <ClerkProvider publishableKey={clerkPubKey || ""}>
+  <ClerkProvider
+    publishableKey={clerkPubKey || ""}
+    appearance={{
+      elements: {
+        userButtonPopoverCard: {
+          background: "hsl(240 15% 15%)",
+          border: "1px solid hsl(var(--border))",
+          boxShadow: "var(--shadow-glow)",
+        },
+        userButtonPopoverHeader: {
+          background: "hsl(240 15% 15%)",
+          color: "hsl(var(--foreground))",
+          borderBottom: "1px solid hsl(var(--border))",
+        },
+        userButtonPopoverMain: {
+          background: "hsl(240 15% 15%)",
+          color: "hsl(var(--foreground))",
+        },
+        userButtonPopoverActionButton: {
+          color: "hsl(var(--foreground))",
+          "&:hover": {
+            background: "hsl(var(--muted))",
+          },
+        },
+        userButtonPopoverActionButtonText: {
+          color: "hsl(var(--foreground))",
+        },
+        userPreviewSecondaryIdentifier: {
+          color: "hsl(0 0% 98%)",
+        },
+        userButtonPopoverMetadatas: {
+          color: "hsl(0 0% 98%)",
+        },
+        userButtonPopoverFooter: {
+          background: "hsl(240 15% 30%)",
+          borderTop: "1px solid hsl(var(--border))",
+          color: "hsl(0 0% 98%)",
+        },
+      },
+      userButton: {
+        menuItems: [
+          { 
+            label: "History", 
+            url: "/history", 
+            icon: "/path/to/history-icon.svg" // You might want to add a real icon here
+          },
+          { 
+            label: "Manage Account", 
+            url: "/user", // Clerk's default for managing account
+            icon: "/path/to/manage-account-icon.svg"
+          },
+          { 
+            label: "Sign Out", 
+            url: "/", 
+            icon: "/path/to/sign-out-icon.svg"
+          },
+        ],
+      },
+    }}
+  >
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />

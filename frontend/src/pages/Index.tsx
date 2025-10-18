@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Brain, Mic, Sparkles, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/clerk-react";
-import heroBg from "@/assets/hero-bg.jpg";
+import heroBg from "@/assets/bg1.jpg";
 
 const Index = () => {
   const navigate = useNavigate();

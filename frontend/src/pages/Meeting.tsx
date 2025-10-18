@@ -22,10 +22,12 @@ import { BotControls } from "@/components/meeting/BotControls";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useBot } from "@/hooks/useBot";
 import { useToast } from "@/hooks/use-toast";
+import { UserButton } from "@clerk/clerk-react";
 
 const Meeting = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"mic" | "bot">("mic");
+  const navigate = useNavigate();
 
   // Transcription (microphone) hooks
   const {
