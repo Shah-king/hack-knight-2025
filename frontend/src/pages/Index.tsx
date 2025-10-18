@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { FloatingOrbs } from "@/components/ui/floating-orbs";
+import { FloatingIcons } from "@/components/ui/floating-icons";
 import { motion } from "framer-motion";
 import heroBg from "@/assets/bg1.jpg";
 
@@ -15,6 +16,20 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Animated AI Energy Flow Background */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 opacity-20 blur-3xl"
+        animate={{ 
+          backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+          scale: [1, 1.1, 1]
+        }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+        style={{ backgroundSize: '200% 200%' }}
+      />
+      
+      {/* Floating decorative icons */}
+      <FloatingIcons />
+      
       {/* Floating orbs background */}
       <FloatingOrbs />
       

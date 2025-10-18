@@ -24,6 +24,7 @@ import { useBot } from "@/hooks/useBot";
 import { useToast } from "@/hooks/use-toast";
 import { UserButton } from "@clerk/clerk-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { FloatingIcons } from "@/components/ui/floating-icons";
 import { motion } from "framer-motion";
 
 const Meeting = () => {
@@ -140,6 +141,22 @@ const Meeting = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Animated AI Energy Flow Background */}
+      <motion.div
+        className="fixed inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 opacity-15 blur-3xl pointer-events-none"
+        animate={{ 
+          backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+          scale: [1, 1.05, 1]
+        }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+        style={{ backgroundSize: '200% 200%' }}
+      />
+      
+      {/* Floating decorative icons */}
+      <div className="fixed inset-0 pointer-events-none">
+        <FloatingIcons />
+      </div>
+      
       {/* Ambient background */}
       <div className="fixed inset-0 bg-gradient-aurora opacity-20 animate-pulse-glow pointer-events-none" />
       <div className="fixed inset-0 bg-[linear-gradient(rgba(0,217,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,217,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none" />
