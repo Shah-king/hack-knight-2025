@@ -24,6 +24,7 @@ import { useBot } from "@/hooks/useBot";
 import { useToast } from "@/hooks/use-toast";
 import { UserButton } from "@clerk/clerk-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { motion } from "framer-motion";
 
 const Meeting = () => {
   const { toast } = useToast();
@@ -198,16 +199,32 @@ const Meeting = () => {
 
         {/* Main Content */}
         <main className="container mx-auto px-6 py-6">
-          <div className="grid lg:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="grid lg:grid-cols-3 gap-6"
+          >
             {/* Left Column - Transcription */}
             <div className="lg:col-span-2 space-y-6">
-              <TranscriptionPanel
-                isListening={isTranscribing}
-                transcriptions={transcriptions}
-              />
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <TranscriptionPanel
+                  isListening={isTranscribing}
+                  transcriptions={transcriptions}
+                />
+              </motion.div>
 
               {/* Control Bar */}
-              <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10 hover:border-primary/20 transition-all">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <Button
@@ -268,11 +285,17 @@ const Meeting = () => {
                     </Button>
                   </div>
                 </div>
-              </Card>
+                </Card>
+              </motion.div>
             </div>
 
             {/* Right Column - AI Bot & Summary */}
-            <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="space-y-6"
+            >
               <Tabs
                 value={activeTab}
                 onValueChange={(v) => setActiveTab(v as "mic" | "bot")}
@@ -339,8 +362,8 @@ const Meeting = () => {
               </Tabs>
 
               <SummaryPanel />
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </main>
       </div>
     </div>
