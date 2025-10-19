@@ -7,6 +7,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { FloatingOrbs } from "@/components/ui/floating-orbs";
 import { FloatingIcons } from "@/components/ui/floating-icons";
+import { SimpleAnimatedTitle } from "@/components/ui/simple-animated-title";
 import { motion } from "framer-motion";
 import heroBg from "@/assets/bg1.jpg";
 
@@ -60,7 +61,14 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             {isSignedIn ? (
-              <UserButton afterSignOutUrl="/" />
+              <UserButton 
+                afterSignOutUrl="/" 
+                appearance={{
+                  elements: {
+                    avatarBox: "border-0 shadow-none"
+                  }
+                }}
+              />
             ) : (
               <SignInButton mode="modal">
                 <Button
@@ -91,30 +99,15 @@ const Index = () => {
             </motion.div>
 
             {/* Main Heading */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+            <SimpleAnimatedTitle
+              lines={[
+                "Never Miss",
+                "a Meeting",
+                "Again"
+              ]}
               className="text-6xl md:text-7xl font-bold leading-tight"
-            >
-              <motion.span
-                className="inline-block bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 bg-clip-text text-transparent"
-                animate={{
-                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: 'linear',
-                }}
-                style={{ backgroundSize: '200% 200%' }}
-              >
-                Never Miss
-              </motion.span>
-              {" "}a Meeting
-              <br />
-              <span className="text-foreground">Again</span>
-            </motion.h1>
+              delay={0.1}
+            />
 
             {/* Subheading */}
             <motion.p

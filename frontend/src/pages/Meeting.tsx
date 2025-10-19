@@ -209,7 +209,14 @@ const Meeting = () => {
               >
                 End Session
               </Button>
-              <UserButton afterSignOutUrl="/" />
+              <UserButton 
+                afterSignOutUrl="/" 
+                appearance={{
+                  elements: {
+                    avatarBox: "border-0 shadow-none"
+                  }
+                }}
+              />
             </div>
           </div>
         </header>
