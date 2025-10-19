@@ -193,7 +193,7 @@ class RecallService extends EventEmitter {
 
       // Update local cache
       if (this.activeBots.has(botId)) {
-        this.activeBots.get(botId).status = bot.status.code;
+        this.activeBots.get(botId).status = bot.status?.code || bot.status;
       }
 
       return bot;
@@ -274,8 +274,12 @@ class RecallService extends EventEmitter {
       // WebSocket fallback (local development)
       console.log(`🔌 Connecting to transcript WebSocket for bot ${botId} (local mode)`);
 
-      const wsUrl = `wss://${this.config.region}.recall.ai/api/v2/bot/${botId}/transcript?authorization=Token ${this.config.apiKey}`;
-      const ws = new WebSocket(wsUrl);
+      const wsUrl = `wss://${this.config.region}.recall.ai/api/v1/bot/${botId}/transcript`;
+      const ws = new WebSocket(wsUrl, {
+        headers: {
+          Authorization: `Token ${this.config.apiKey}`,
+        },
+      });
 
       ws.on('open', () => {
         console.log(`✅ Transcript WebSocket connected for bot ${botId}`);
