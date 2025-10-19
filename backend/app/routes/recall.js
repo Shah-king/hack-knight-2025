@@ -159,10 +159,10 @@ router.get('/bots', (req, res) => {
 });
 
 /**
- * Get user's active bot
+ * Get user's active bot with live status
  * GET /api/recall/my-bot/:userId
  */
-router.get('/my-bot/:userId', (req, res) => {
+router.get('/my-bot/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const bot = recallService.getBotByUserId(userId);
@@ -171,6 +171,14 @@ router.get('/my-bot/:userId', (req, res) => {
       return res.status(404).json({
         error: 'No active bot found for this user',
       });
+    }
+
+    // Fetch live status from Recall.ai
+    const liveStatus = await recallService.getBotStatus(bot.botId);
+
+    if (liveStatus) {
+      // Update cached status
+      bot.status = liveStatus.status?.code || liveStatus.status;
     }
 
     res.json({

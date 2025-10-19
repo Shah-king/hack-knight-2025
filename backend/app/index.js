@@ -29,6 +29,7 @@ import summaryRouter from "./routes/summary.js";
 import voiceRouter from "./routes/voice.js";
 import twinRouter from "./routes/assistant.js";
 import recallRouter from "./routes/recall.js";
+import webhookRouter from "./routes/webhookController.js";
 
 // Import services and models
 import deepgramService from "./services/deepgramService.js";
@@ -105,6 +106,7 @@ app.use("/api/summary", summaryRouter);
 app.use("/api/voice", voiceRouter);
 app.use("/api/twin", twinRouter);
 app.use("/api/recall", recallRouter);
+app.use("/api/webhooks", webhookRouter);
 
 // Store WebSocket metadata for each connection
 const wsClients = new Map();

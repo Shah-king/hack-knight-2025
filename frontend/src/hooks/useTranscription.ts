@@ -82,6 +82,7 @@ export const useTranscription = () => {
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          console.log('📨 WebSocket message received:', message.type, message);
 
           switch (message.type) {
             case 'transcription_started':
@@ -91,6 +92,7 @@ export const useTranscription = () => {
               break;
 
             case 'transcription':
+              console.log('📝 Transcript data:', message.data);
               const newTranscription: Transcription = {
                 id: `${Date.now()}-${Math.random()}`,
                 speaker: message.data.speaker || 'User',
@@ -99,6 +101,8 @@ export const useTranscription = () => {
                 isFinal: message.data.isFinal,
                 confidence: message.data.confidence
               };
+
+              console.log('✅ Adding transcript to state:', newTranscription);
 
               setTranscriptions(prev => {
                 // If this is an interim result, replace the last interim
