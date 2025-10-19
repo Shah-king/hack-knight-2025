@@ -19,6 +19,7 @@ import { TranscriptionPanel } from "@/components/meeting/TranscriptionPanel";
 import { SummaryPanel } from "@/components/meeting/SummaryPanel";
 import { LaunchBot } from "@/components/meeting/LaunchBot";
 import { BotControls } from "@/components/meeting/BotControls";
+import DesktopRecording from "@/components/meeting/DesktopRecording";
 import { useTranscription } from "@/hooks/useTranscription";
 import { useBot } from "@/hooks/useBot";
 import { useToast } from "@/hooks/use-toast";
@@ -29,7 +30,7 @@ import { motion } from "framer-motion";
 
 const Meeting = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"mic" | "bot">("bot"); // Changed default to "bot"
+  const [activeTab, setActiveTab] = useState<"mic" | "bot" | "desktop">("desktop"); // Changed default to "desktop"
   const navigate = useNavigate();
 
   // Transcription (microphone) hooks
@@ -427,9 +428,9 @@ const Meeting = () => {
             >
               <Tabs
                 value={activeTab}
-                onValueChange={(v) => setActiveTab(v as "mic" | "bot")}
+                onValueChange={(v) => setActiveTab(v as "mic" | "bot" | "desktop")}
               >
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="mic" className="gap-2">
                     <Mic className="w-4 h-4" />
                     Microphone
@@ -437,6 +438,10 @@ const Meeting = () => {
                   <TabsTrigger value="bot" className="gap-2">
                     <Rocket className="w-4 h-4" />
                     Bot Mode
+                  </TabsTrigger>
+                  <TabsTrigger value="desktop" className="gap-2">
+                    <Brain className="w-4 h-4" />
+                    Desktop
                   </TabsTrigger>
                 </TabsList>
 
@@ -486,6 +491,10 @@ const Meeting = () => {
                       }}
                     />
                   )}
+                </TabsContent>
+
+                <TabsContent value="desktop" className="mt-4">
+                  <DesktopRecording />
                 </TabsContent>
               </Tabs>
 

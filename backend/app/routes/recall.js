@@ -1,5 +1,7 @@
 import express from 'express';
 import recallService from '../services/recallService.js';
+import Meeting from '../models/Meeting.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -43,6 +45,24 @@ router.post('/launch', async (req, res) => {
       botName: botName || 'EchoTwin AI',
       userId,
     });
+
+    // Create Meeting record in database
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const meeting = new Meeting({
+          userId,
+          botId: bot.id,
+          meetingUrl: typeof bot.meeting_url === 'string' ? bot.meeting_url : meetingUrl,
+          botName: bot.bot_name || botName || 'EchoTwin AI',
+          title: `Meeting - ${new Date().toLocaleDateString()}`,
+          status: 'active',
+        });
+        await meeting.save();
+        console.log(`✅ Meeting record created: ${meeting._id}`);
+      } catch (dbError) {
+        console.warn('⚠️ Failed to create meeting record:', dbError.message);
+      }
+    }
 
     res.json({
       success: true,
@@ -123,6 +143,21 @@ router.post('/leave', async (req, res) => {
     }
 
     const result = await recallService.leaveBot(targetBotId);
+
+    // Update meeting status in database
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const meeting = await Meeting.findOne({ botId: targetBotId });
+        if (meeting) {
+          meeting.status = 'ended';
+          meeting.endTime = new Date();
+          await meeting.save();
+          console.log(`✅ Meeting ${meeting._id} marked as ended`);
+        }
+      } catch (dbError) {
+        console.warn('⚠️ Failed to update meeting status:', dbError.message);
+      }
+    }
 
     res.json({
       success: true,

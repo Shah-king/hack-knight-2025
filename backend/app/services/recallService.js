@@ -20,9 +20,12 @@ class RecallService extends EventEmitter {
       apiKey: process.env.RECALL_API_KEY,
       region: process.env.RECALL_REGION || 'us-west-2',
     };
-    this.baseUrl = `https://${this.config.region}.recall.ai/api/v1`;
+    // Recall.ai uses a single global API endpoint, not region-specific
+    this.baseUrl = 'https://api.recall.ai/api/v1';
     this.activeBots = new Map(); // Map of botId -> bot metadata
     this.transcriptConnections = new Map(); // Map of botId -> WebSocket
+
+    console.log('🔧 RecallService initialized with base URL:', this.baseUrl);
   }
 
   /**
@@ -35,6 +38,10 @@ class RecallService extends EventEmitter {
       console.warn(
         '⚠️  Recall.ai credentials missing. Required: RECALL_API_KEY and RECALL_REGION'
       );
+      console.warn('   Current config:', {
+        apiKey: this.config.apiKey ? `${this.config.apiKey.substring(0, 10)}...` : 'NOT SET',
+        region: this.config.region,
+      });
     }
     return isValid;
   }
@@ -44,10 +51,21 @@ class RecallService extends EventEmitter {
    * @returns {Object} Headers object
    */
   getHeaders() {
-    return {
-      'Authorization': `Token ${this.config.apiKey}`,
+    // Recall.ai expects: Authorization: Token YOUR_API_KEY
+    const headers = {
+      'Authorization': `${this.config.apiKey}`,
       'Content-Type': 'application/json',
     };
+
+    // Debug: Log sanitized headers (first 20 chars of token only)
+    console.log('🔑 Request headers:', {
+      'Authorization': this.config.apiKey
+        ? `${this.config.apiKey.substring(0, 20)}...`
+        : 'MISSING',
+      'Content-Type': 'application/json',
+    });
+
+    return headers;
   }
 
   /**
@@ -92,16 +110,32 @@ class RecallService extends EventEmitter {
       },
     };
 
-    // Only add webhook config if BACKEND_URL is set and publicly accessible
-    // For local development, we'll use WebSocket instead
+    // Configure transcription provider
+    // Use Deepgram if API key is available, otherwise use Recall.ai's built-in provider
+    const deepgramApiKey = process.env.DEEPGRAM_API_KEY;
+    if (deepgramApiKey) {
+      // Use Deepgram for enhanced transcription quality
+      payload.transcription_options = {
+        provider: 'deepgram',
+      };
+      console.log('🎙️ Deepgram transcription enabled');
+    } else {
+      // Fallback to Recall.ai's built-in streaming transcription
+      payload.transcription_options = {
+        provider: 'assembly_ai',  // Recall.ai's default provider
+      };
+      console.log('🎙️ Using Recall.ai default transcription (AssemblyAI)');
+      console.log('   💡 Set DEEPGRAM_API_KEY for enhanced transcription');
+    }
+
+    // Configure webhook for real-time transcript delivery
+    // Transcripts will be delivered via webhook (production) or WebSocket (local dev)
     const serverUrl = process.env.BACKEND_URL;
     if (serverUrl && !serverUrl.includes('localhost') && !serverUrl.includes('127.0.0.1')) {
       const webhookUrl = `${serverUrl}/api/webhooks/recall`;
-      payload.notification_config = {
-        webhook_url: webhookUrl,
-        events: ['transcript.segment', 'bot.status_change'],
-      };
+      payload.webhook_url = webhookUrl;
       console.log('🔗 Webhook configured:', webhookUrl);
+      console.log('   Events: bot.status_change, transcript.segment');
     } else {
       console.log('ℹ️  Webhook disabled (local development) - will use WebSocket fallback');
     }
@@ -191,9 +225,10 @@ class RecallService extends EventEmitter {
 
       const bot = response.data;
 
-      // Update local cache
+      // Update local cache - handle both status formats
       if (this.activeBots.has(botId)) {
-        this.activeBots.get(botId).status = bot.status.code;
+        const statusCode = bot.status?.code || bot.status || 'unknown';
+        this.activeBots.get(botId).status = statusCode;
       }
 
       return bot;
@@ -272,7 +307,10 @@ class RecallService extends EventEmitter {
       console.log(`✅ Transcript webhook ready for bot ${botId}`);
     } else {
       // WebSocket fallback (local development)
-      console.log(`🔌 Connecting to transcript WebSocket for bot ${botId} (local mode)`);
+      // NOTE: The WebSocket endpoint may not be available for all Recall.ai accounts
+      // If you get 404 errors, you need to set BACKEND_URL to use webhooks instead
+      console.log(`🔌 Attempting to connect to transcript WebSocket for bot ${botId} (local mode)`);
+      console.log(`   ⚠️  If this fails with 404, set BACKEND_URL to use webhooks`);
 
       const wsUrl = `wss://${this.config.region}.recall.ai/api/v2/bot/${botId}/transcript?authorization=Token ${this.config.apiKey}`;
       const ws = new WebSocket(wsUrl);
@@ -308,7 +346,17 @@ class RecallService extends EventEmitter {
       });
 
       ws.on('error', (error) => {
-        console.error(`WebSocket error for bot ${botId}:`, error.message);
+        console.warn(`⚠️  WebSocket error for bot ${botId}: ${error.message}`);
+        console.warn(`   The transcript WebSocket endpoint may not be available.`);
+        console.warn(`   Set BACKEND_URL to a public URL to use webhooks instead.`);
+
+        // Don't try to reconnect - just mark as failed
+        this.transcriptConnections.set(botId, {
+          type: 'websocket-failed',
+          userId,
+          error: error.message,
+          connectedAt: new Date(),
+        });
       });
 
       ws.on('close', () => {
