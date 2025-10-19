@@ -55,11 +55,12 @@ class RecallService extends EventEmitter {
    *
    * @param {Object} options - Bot creation options
    * @param {string} options.meetingUrl - Meeting URL (Zoom, Meet, Teams, etc.)
-   * @param {string} options.botName - Display name for the bot (default: "EchoTwin AI")
+   * @param {string} options.botName - Display name for the bot (default: "AI Assistant")
    * @param {string} options.userId - User ID who launched the bot
+   * @param {boolean} options.enableAudioOutput - Enable audio output via Output Media API
    * @returns {Promise<Object>} Bot instance from Recall.ai
    */
-  async createBot({ meetingUrl, botName = 'EchoTwin AI', userId }) {
+  async createBot({ meetingUrl, botName = 'AI Assistant', userId, enableAudioOutput = false }) {
     console.log(`🤖 Creating Recall.ai bot for meeting: ${meetingUrl}`);
 
     if (!this.validateConfig()) {
@@ -91,6 +92,34 @@ class RecallService extends EventEmitter {
       },
     };
 
+    // Only add webhook config if BACKEND_URL is set and publicly accessible
+    // For local development, we'll use WebSocket instead
+    const serverUrl = process.env.BACKEND_URL;
+    if (serverUrl && !serverUrl.includes('localhost') && !serverUrl.includes('127.0.0.1')) {
+      const webhookUrl = `${serverUrl}/api/webhooks/recall`;
+      payload.notification_config = {
+        webhook_url: webhookUrl,
+        events: ['transcript.segment', 'bot.status_change'],
+      };
+      console.log('🔗 Webhook configured:', webhookUrl);
+    } else {
+      console.log('ℹ️  Webhook disabled (local development) - will use WebSocket fallback');
+    }
+
+    // Add Output Media API configuration if audio output is enabled
+    if (enableAudioOutput && serverUrl) {
+      payload.output_media = {
+        camera: null,
+        microphone: {
+          kind: 'webpage',
+          config: {
+            url: `${serverUrl}/api/audio/output-media`,
+          },
+        },
+      };
+      console.log(`🔊 Output Media API enabled`);
+    }
+
     try {
       const response = await axios.post(`${this.baseUrl}/bot`, payload, {
         headers: this.getHeaders(),
@@ -118,17 +147,33 @@ class RecallService extends EventEmitter {
       // Emit bot-created event
       this.emit('bot-created', { botId: bot.id, userId, status: statusCode });
 
-      // Wait a bit for bot to join, then set up transcript stream
-      setTimeout(() => {
-        this.connectTranscriptStream(bot.id, userId);
-      }, 5000); // Wait 5 seconds for bot to join meeting
+      // Set up transcript stream (webhook or WebSocket)
+      this.connectTranscriptStream(bot.id, userId);
 
       return bot;
     } catch (error) {
-      console.error('❌ Error creating bot:', error.response?.data || error.message);
-      throw new Error(
-        error.response?.data?.message || error.message || 'Failed to create bot'
-      );
+      console.error('❌ Error creating bot:');
+      console.error('   Status:', error.response?.status);
+      console.error('   Data:', error.response?.data);
+      console.error('   Message:', error.message);
+
+      // Extract user-friendly error message
+      const errorData = error.response?.data;
+      let errorMsg = 'Failed to create bot';
+
+      if (errorData) {
+        if (typeof errorData === 'string') {
+          errorMsg = errorData;
+        } else if (errorData.message) {
+          errorMsg = errorData.message;
+        } else if (errorData.detail) {
+          errorMsg = errorData.detail;
+        } else if (errorData.error) {
+          errorMsg = errorData.error;
+        }
+      }
+
+      throw new Error(errorMsg);
     }
   }
 
@@ -172,10 +217,15 @@ class RecallService extends EventEmitter {
         headers: this.getHeaders(),
       });
 
-      // Close WebSocket connection if exists
+      // Close transcript connection if exists
       if (this.transcriptConnections.has(botId)) {
-        const ws = this.transcriptConnections.get(botId);
-        ws.close();
+        const connection = this.transcriptConnections.get(botId);
+
+        // Close WebSocket if it's a WebSocket connection
+        if (connection.type === 'websocket' && connection.ws) {
+          connection.ws.close();
+        }
+
         this.transcriptConnections.delete(botId);
       }
 
@@ -197,60 +247,82 @@ class RecallService extends EventEmitter {
   }
 
   /**
-   * Connect to real-time transcript WebSocket
+   * Set up transcript stream (webhook or WebSocket fallback)
+   * - Production: Uses webhooks (push-based, most efficient)
+   * - Local dev: Uses WebSocket (works without public URL)
    *
    * @param {string} botId - Bot ID
    * @param {string} userId - User ID who owns the bot
-   * @returns {WebSocket} WebSocket connection
    */
   connectTranscriptStream(botId, userId) {
-    const wsUrl = `wss://${this.config.region}.recall.ai/api/v2/bot/${botId}/transcript?authorization=Token ${this.config.apiKey}`;
+    const serverUrl = process.env.BACKEND_URL;
+    const useWebhook = serverUrl && !serverUrl.includes('localhost') && !serverUrl.includes('127.0.0.1');
 
-    console.log(`🔌 Connecting to transcript stream for bot ${botId}`);
+    if (useWebhook) {
+      // Webhook mode (production)
+      console.log(`🔌 Webhook-based transcript stream configured for bot ${botId}`);
+      console.log(`   Transcript segments will be delivered to /api/webhooks/recall`);
 
-    const ws = new WebSocket(wsUrl);
+      this.transcriptConnections.set(botId, {
+        type: 'webhook',
+        userId,
+        connectedAt: new Date(),
+      });
 
-    ws.on('open', () => {
-      console.log(`✅ Transcript WebSocket connected for bot ${botId}`);
-    });
+      console.log(`✅ Transcript webhook ready for bot ${botId}`);
+    } else {
+      // WebSocket fallback (local development)
+      console.log(`🔌 Connecting to transcript WebSocket for bot ${botId} (local mode)`);
 
-    ws.on('message', (data) => {
-      try {
-        const message = JSON.parse(data.toString());
+      const wsUrl = `wss://${this.config.region}.recall.ai/api/v2/bot/${botId}/transcript?authorization=Token ${this.config.apiKey}`;
+      const ws = new WebSocket(wsUrl);
 
-        if (message.type === 'transcript') {
-          const transcript = message.data;
+      ws.on('open', () => {
+        console.log(`✅ Transcript WebSocket connected for bot ${botId}`);
+      });
 
-          // Extract text from words array
-          const text = transcript.words.map(w => w.text).join(' ');
+      ws.on('message', (data) => {
+        try {
+          const message = JSON.parse(data.toString());
 
-          // Emit transcript event for broadcasting
-          this.emit('transcript', {
-            botId,
-            userId,
-            speaker: transcript.speaker || 'Unknown',
-            text: text,
-            isFinal: transcript.is_final,
-            timestamp: new Date(),
-            confidence: 1.0, // Recall.ai doesn't provide confidence scores
-          });
+          if (message.type === 'transcript') {
+            const transcript = message.data;
+
+            // Extract text from words array
+            const text = transcript.words?.map(w => w.text).join(' ') || '';
+
+            // Emit transcript event (same format as webhook)
+            this.emit('transcript', {
+              botId,
+              userId,
+              speaker: transcript.speaker || 'Unknown',
+              text: text,
+              isFinal: transcript.is_final !== false,
+              timestamp: new Date(),
+              confidence: 1.0,
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing transcript:', error);
         }
-      } catch (error) {
-        console.error('Error parsing transcript:', error);
-      }
-    });
+      });
 
-    ws.on('error', (error) => {
-      console.error(`WebSocket error for bot ${botId}:`, error);
-    });
+      ws.on('error', (error) => {
+        console.error(`WebSocket error for bot ${botId}:`, error.message);
+      });
 
-    ws.on('close', () => {
-      console.log(`🔌 Transcript WebSocket closed for bot ${botId}`);
-      this.transcriptConnections.delete(botId);
-    });
+      ws.on('close', () => {
+        console.log(`🔌 Transcript WebSocket closed for bot ${botId}`);
+        this.transcriptConnections.delete(botId);
+      });
 
-    this.transcriptConnections.set(botId, ws);
-    return ws;
+      this.transcriptConnections.set(botId, {
+        type: 'websocket',
+        userId,
+        ws: ws,
+        connectedAt: new Date(),
+      });
+    }
   }
 
   /**
