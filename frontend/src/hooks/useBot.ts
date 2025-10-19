@@ -42,11 +42,17 @@ export const useBot = () => {
           const message = JSON.parse(event.data);
 
           switch (message.type) {
-            case 'bot_joined':
-              console.log('Bot joined meeting:', message.data);
+            case 'bot_created':
+              console.log('Bot created and joining meeting:', message.data);
               setBotData({
-                ...message.data,
-                joinedAt: new Date(message.data.joinedAt)
+                botId: message.data.botId,
+                meetingNumber: '', // Not used with Recall.ai
+                botName: 'EchoTwin AI',
+                status: message.data.status,
+                isMuted: false,
+                isAudioEnabled: true,
+                joinedAt: new Date(),
+                uptime: 0
               });
               break;
 
@@ -58,26 +64,24 @@ export const useBot = () => {
             case 'bot_status':
               if (message.data) {
                 setBotData({
-                  ...message.data,
-                  joinedAt: new Date(message.data.joinedAt)
+                  botId: message.data.id || message.data.botId,
+                  meetingNumber: '',
+                  botName: message.data.bot_name || 'EchoTwin AI',
+                  status: message.data.status?.code || message.data.status,
+                  isMuted: false,
+                  isAudioEnabled: true,
+                  joinedAt: new Date(message.data.created_at || Date.now()),
+                  uptime: 0
                 });
               }
               break;
 
-            case 'bot_muted':
-              setBotData(prev => prev ? { ...prev, isMuted: true } : null);
-              break;
-
-            case 'bot_unmuted':
-              setBotData(prev => prev ? { ...prev, isMuted: false } : null);
-              break;
-
-            case 'bot_spoke':
-              console.log('Bot spoke in meeting');
+            case 'ai_response':
+              console.log('AI response generated:', message.data.text);
               break;
 
             default:
-              // Ignore other message types
+              // Ignore other message types (transcription, etc.)
               break;
           }
         } catch (err) {
@@ -108,7 +112,7 @@ export const useBot = () => {
     if (!user) return;
 
     try {
-      const response = await fetch(`${apiUrl}/api/zoom/my-bot/${user.id}`);
+      const response = await fetch(`${apiUrl}/api/recall/my-bot/${user.id}`);
 
       if (response.status === 404) {
         // No active bot
@@ -123,8 +127,14 @@ export const useBot = () => {
       const data = await response.json();
       if (data.success && data.bot) {
         setBotData({
-          ...data.bot,
-          joinedAt: new Date(data.bot.joinedAt)
+          botId: data.bot.botId,
+          meetingNumber: '',
+          botName: data.bot.botName || 'EchoTwin AI',
+          status: data.bot.status,
+          isMuted: false,
+          isAudioEnabled: true,
+          joinedAt: new Date(data.bot.createdAt),
+          uptime: 0
         });
       }
     } catch (err) {
@@ -145,14 +155,13 @@ export const useBot = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${apiUrl}/api/zoom/leave`, {
+      const response = await fetch(`${apiUrl}/api/recall/leave`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          botId: botId || botData?.botId,
-          userId: user?.id
+          botId: botId || botData?.botId
         })
       });
 
@@ -174,9 +183,9 @@ export const useBot = () => {
   }, [user, botData, apiUrl]);
 
   /**
-   * Mute bot
+   * Generate AI response
    */
-  const muteBot = useCallback(async () => {
+  const generateResponse = useCallback(async (customPrompt?: string) => {
     if (!botData) {
       setError('No active bot');
       return false;
@@ -186,66 +195,27 @@ export const useBot = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${apiUrl}/api/zoom/mute`, {
+      const response = await fetch(`${apiUrl}/api/assistant/respond`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          botId: botData.botId
+          botId: botData.botId,
+          customPrompt
         })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to mute bot');
+        throw new Error(data.error || 'Failed to generate response');
       }
 
-      setBotData(prev => prev ? { ...prev, isMuted: true } : null);
+      console.log('✅ AI response generated:', data.response);
       return true;
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to mute bot';
-      setError(errorMsg);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [botData, apiUrl]);
-
-  /**
-   * Unmute bot
-   */
-  const unmuteBot = useCallback(async () => {
-    if (!botData) {
-      setError('No active bot');
-      return false;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${apiUrl}/api/zoom/unmute`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          botId: botData.botId
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to unmute bot');
-      }
-
-      setBotData(prev => prev ? { ...prev, isMuted: false } : null);
-      return true;
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to unmute bot';
+      const errorMsg = err instanceof Error ? err.message : 'Failed to generate AI response';
       setError(errorMsg);
       return false;
     } finally {
@@ -311,7 +281,26 @@ export const useBot = () => {
     if (user) {
       fetchBotStatus();
     }
-  }, [user, fetchBotStatus]);
+  }, [user]); // Only run on mount when user changes
+
+  // Poll for status updates only when bot is joining/connecting
+  useEffect(() => {
+    // Only poll if bot exists and is not yet in final state
+    if (!botData ||
+        botData.status === 'in_call_recording' ||
+        botData.status === 'in_call' ||
+        botData.status === 'done' ||
+        botData.status === 'fatal') {
+      return;
+    }
+
+    // Poll every 15 seconds (increased to avoid rate limiting)
+    const pollInterval = setInterval(() => {
+      fetchBotStatus();
+    }, 15000);
+
+    return () => clearInterval(pollInterval);
+  }, [botData?.status]); // Only depend on status, not the whole fetchBotStatus function
 
   return {
     // State
@@ -323,8 +312,7 @@ export const useBot = () => {
     // Actions
     fetchBotStatus,
     leaveMeeting,
-    muteBot,
-    unmuteBot,
+    generateResponse,
     speak
   };
 };

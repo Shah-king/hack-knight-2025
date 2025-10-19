@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Power, Volume2, VolumeX, LogOut, Activity } from "lucide-react";
+import { Bot, Brain, LogOut, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface BotControlsProps {
@@ -17,8 +17,7 @@ interface BotControlsProps {
     uptime: number;
   } | null;
   onLeave?: () => void;
-  onMute?: () => void;
-  onUnmute?: () => void;
+  onGenerateResponse?: () => void;
   onSpeak?: (text: string) => void;
 }
 
@@ -26,8 +25,7 @@ export const BotControls = ({
   botId,
   botStatus,
   onLeave,
-  onMute,
-  onUnmute,
+  onGenerateResponse,
   onSpeak
 }: BotControlsProps) => {
   const [uptime, setUptime] = useState(0);
@@ -69,8 +67,8 @@ export const BotControls = ({
     return null;
   }
 
-  const isConnected = botStatus.status === 'connected';
-  const isJoining = botStatus.status === 'joining';
+  const isConnected = botStatus.status === 'in_call' || botStatus.status === 'in_waiting_room';
+  const isJoining = botStatus.status === 'joining' || botStatus.status === 'created';
 
   return (
     <Card className="p-6 bg-card/50 backdrop-blur-glass border-primary/10">
@@ -131,21 +129,12 @@ export const BotControls = ({
         {isConnected && (
           <div className="grid grid-cols-2 gap-2">
             <Button
-              onClick={botStatus.isMuted ? onUnmute : onMute}
+              onClick={onGenerateResponse}
               variant="outline"
-              className="border-primary/20 hover:border-primary/50"
+              className="border-primary/20 hover:border-primary/50 bg-gradient-primary/10"
             >
-              {botStatus.isMuted ? (
-                <>
-                  <VolumeX className="w-4 h-4 mr-2" />
-                  Unmute
-                </>
-              ) : (
-                <>
-                  <Volume2 className="w-4 h-4 mr-2" />
-                  Mute
-                </>
-              )}
+              <Brain className="w-4 h-4 mr-2" />
+              AI Response
             </Button>
 
             <Button
@@ -159,22 +148,13 @@ export const BotControls = ({
           </div>
         )}
 
-        {/* Quick Responses */}
-        {isConnected && !botStatus.isMuted && onSpeak && (
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium text-muted-foreground">Quick Responses</h4>
-            {quickResponses.map((response, i) => (
-              <Button
-                key={i}
-                variant="outline"
-                onClick={() => onSpeak(response)}
-                className="w-full justify-start text-left border-primary/20 hover:border-primary/50 hover:bg-primary/5"
-                size="sm"
-              >
-                <Volume2 className="w-4 h-4 mr-2 text-primary flex-shrink-0" />
-                <span className="text-sm truncate">{response}</span>
-              </Button>
-            ))}
+        {/* Status Info */}
+        {isConnected && (
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <p className="text-xs text-muted-foreground text-center">
+              Bot is listening to the meeting and collecting transcripts.
+              Click "AI Response" to generate a contextual reply.
+            </p>
           </div>
         )}
 
