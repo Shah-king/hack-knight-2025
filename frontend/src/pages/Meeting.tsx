@@ -491,8 +491,8 @@ const Meeting = () => {
 
               {/* ✅ FIX: Only show summary if we have transcripts */}
               {transcriptions.length > 0 && <SummaryPanel />}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </main>
       </div>
     </div>
