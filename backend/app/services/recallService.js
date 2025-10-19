@@ -312,8 +312,12 @@ class RecallService extends EventEmitter {
       console.log(`🔌 Attempting to connect to transcript WebSocket for bot ${botId} (local mode)`);
       console.log(`   ⚠️  If this fails with 404, set BACKEND_URL to use webhooks`);
 
-      const wsUrl = `wss://${this.config.region}.recall.ai/api/v2/bot/${botId}/transcript?authorization=Token ${this.config.apiKey}`;
-      const ws = new WebSocket(wsUrl);
+      const wsUrl = `wss://${this.config.region}.recall.ai/api/v1/bot/${botId}/transcript`;
+      const ws = new WebSocket(wsUrl, {
+        headers: {
+          Authorization: `Token ${this.config.apiKey}`,
+        },
+      });
 
       ws.on('open', () => {
         console.log(`✅ Transcript WebSocket connected for bot ${botId}`);
