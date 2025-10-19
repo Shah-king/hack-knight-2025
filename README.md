@@ -9,16 +9,16 @@
    - [Prerequisites](#prerequisites)
    - [Setup](#setup)
 5. [Images](#images)  
-6. [Author](#author)
 
 ## Overview
 
-SayLess enables users to interact through real-time voice communication. It leverages WebSockets for low-latency streaming, AI APIs for speech and text processing, and a modern web stack for seamless performance.
+SayLess is an AI-powered meeting assistant that joins real-time meetings, speaks naturally in a chosen voice, and actively participates in conversations. It can listen, respond when needed, and automatically generate transcripts, summaries, and notes for every meeting.
 
 ## Features
 
-- abc
-- abcd
+- Real-time meeting transcription
+- customizable AI voice text-to-speech
+- AI summary
 
 ## Technologies Used
 
@@ -73,4 +73,4 @@ Before installing, ensure you have:
 
 ### System Architecture Diagram
 
-[System Architecture](./assets/systemdiagram.jpg)
+![System Architecture](./assets/systemdiagram.jpg)
