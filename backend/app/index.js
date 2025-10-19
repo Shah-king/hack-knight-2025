@@ -29,10 +29,12 @@ import summaryRouter from "./routes/summary.js";
 import voiceRouter from "./routes/voice.js";
 import twinRouter from "./routes/assistant.js";
 import recallRouter from "./routes/recall.js";
+import recallDesktopRouter from "./routes/recallDesktop.js";
+import webhookRouter from "./routes/webhookController.js";
 
 // Import services and models
-import deepgramService from "./services/deepgramService.js";
 import recallService from "./services/recallService.js";
+import recallDesktopService from "./services/recallDesktopService.js";
 import aiService from "./services/aiService.js";
 import elevenlabsService from "./services/elevenlabsService.js";
 import Meeting from "./models/Meeting.js";
@@ -46,6 +48,14 @@ console.log(
     : "⚠️  Recall.ai not configured - add RECALL_API_KEY and RECALL_REGION"
 );
 console.log(
+  recallDesktopService.validateConfig()
+    ? "✅ Recall.ai Desktop SDK configured (local screen/audio recording)"
+    : "⚠️  Recall.ai Desktop SDK not configured - add RECALL_API_KEY and RECALL_REGION"
+);
+console.log(
+  "✅ Real-time transcription via Recall.ai (webhook + WebSocket)"
+);
+console.log(
   aiService.validateConfig()
     ? "✅ Gemini AI configured"
     : "⚠️  Gemini AI not configured - add GEMINI_API_KEY"
@@ -55,13 +65,6 @@ console.log(
     ? "✅ ElevenLabs TTS configured"
     : "⚠️  ElevenLabs not configured - add ELEVENLABS_API_KEY"
 );
-console.log(
-  deepgramService.validateConfig
-    ? deepgramService.validateConfig()
-      ? "✅ Deepgram STT configured"
-      : "⚠️  Deepgram not configured - add DEEPGRAM_API_KEY"
-    : "✅ Deepgram STT configured"
-);
 console.log("");
 
 // Connect to MongoDB
@@ -69,6 +72,9 @@ connectDatabase();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Trust proxy for ngrok/reverse proxies
+app.set('trust proxy', 1);
 
 // Create HTTP server for WebSocket support
 const server = createServer(app);
@@ -98,6 +104,25 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root route for testing
+app.get("/", (req, res) => {
+  res.json({
+    message: "SayLess API is running",
+    version: "1.0.0",
+    endpoints: {
+      health: "/api/health",
+      recall: "/api/recall",
+      recallDesktop: "/api/recall-desktop",
+      webhooks: "/api/webhooks/recall",
+      webhooksDesktop: "/api/webhooks/recall-desktop",
+      transcription: "/api/transcription",
+      summary: "/api/summary",
+      voice: "/api/voice",
+      twin: "/api/twin",
+    },
+  });
+});
+
 // Routes
 app.use("/api/health", healthRouter);
 app.use("/api/transcription", transcriptionRouter);
@@ -105,37 +130,31 @@ app.use("/api/summary", summaryRouter);
 app.use("/api/voice", voiceRouter);
 app.use("/api/twin", twinRouter);
 app.use("/api/recall", recallRouter);
+app.use("/api/recall-desktop", recallDesktopRouter);
+app.use("/api/webhooks", webhookRouter);
 
 // Store WebSocket metadata for each connection
+// Maps WebSocket client -> { clientId, userId, botId }
 const wsClients = new Map();
 
 // WebSocket connection handling
 wss.on("connection", (ws) => {
-  console.log("New WebSocket connection established");
+  console.log("🔌 New WebSocket connection established");
 
   // Initialize client metadata
   const clientId = Math.random().toString(36).substring(7);
-  wsClients.set(ws, { clientId, meetingId: null });
+  wsClients.set(ws, { clientId, userId: null, botId: null });
 
   ws.on("message", async (message) => {
     try {
-      // Handle binary audio data
-      if (message instanceof Buffer) {
-        const metadata = wsClients.get(ws);
-        if (metadata?.meetingId) {
-          // Send audio to Deepgram
-          deepgramService.sendAudio(metadata.meetingId, message);
-        }
-        return;
-      }
-
-      // Handle JSON messages
+      // Parse JSON messages (no binary audio - Recall.ai handles that)
       const data = JSON.parse(message);
-      console.log("Received WebSocket message:", data.type);
+      console.log("📨 Received WebSocket message:", data.type);
 
       // Handle different message types
       switch (data.type) {
-        case "start_transcription": {
+        case "register_user": {
+          // Register userId with this WebSocket connection
           const { userId } = data;
 
           if (!userId) {
@@ -148,137 +167,17 @@ wss.on("connection", (ws) => {
             return;
           }
 
-          // Create new meeting in database (if connected)
-          let meeting = null;
-          let meetingId = `temp-${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(7)}`;
-
-          if (mongoose.connection.readyState === 1) {
-            try {
-              meeting = new Meeting({
-                userId,
-                title: data.title || "Untitled Meeting",
-                status: "active",
-              });
-              await meeting.save();
-              meetingId = meeting._id.toString();
-              console.log("✅ Meeting saved to database:", meetingId);
-            } catch (dbError) {
-              console.warn(
-                "⚠️ Failed to save meeting to DB, continuing without persistence:",
-                dbError.message
-              );
-            }
-          } else {
-            console.warn(
-              "⚠️ MongoDB not connected, transcription will work without persistence"
-            );
-          }
-
-          // Store meeting ID for this connection
           const metadata = wsClients.get(ws);
-          metadata.meetingId = meetingId;
-
-          // Create Deepgram connection
-          await deepgramService.createLiveTranscription(
-            meetingId,
-            // On transcript callback
-            async (result) => {
-              // Only save final transcripts to database
-              if (result.isFinal && meeting) {
-                try {
-                  meeting.transcriptions.push({
-                    speaker: "user", // TODO: Implement speaker detection
-                    text: result.text,
-                    confidence: result.confidence,
-                    timestamp: result.timestamp,
-                  });
-                  await meeting.save();
-                } catch (dbError) {
-                  console.warn(
-                    "⚠️ Failed to save transcription to DB:",
-                    dbError.message
-                  );
-                }
-              }
-
-              // Send to frontend (both interim and final)
-              ws.send(
-                JSON.stringify({
-                  type: "transcription",
-                  data: {
-                    text: result.text,
-                    isFinal: result.isFinal,
-                    confidence: result.confidence,
-                    timestamp: result.timestamp,
-                    speaker: "user",
-                  },
-                })
-              );
-            },
-            // On error callback
-            (error) => {
-              ws.send(
-                JSON.stringify({
-                  type: "error",
-                  message: "Transcription error: " + error.message,
-                })
-              );
-            }
-          );
+          metadata.userId = userId;
 
           ws.send(
             JSON.stringify({
-              type: "transcription_started",
-              meetingId: meetingId,
+              type: "registered",
+              userId: userId,
             })
           );
 
-          console.log(`Started transcription for meeting ${meetingId}`);
-          break;
-        }
-
-        case "stop_transcription": {
-          const metadata = wsClients.get(ws);
-
-          if (metadata?.meetingId) {
-            // Close Deepgram connection
-            deepgramService.closeTranscription(metadata.meetingId);
-
-            // Update meeting status in DB if connected and not a temp ID
-            if (
-              mongoose.connection.readyState === 1 &&
-              !metadata.meetingId.startsWith("temp-")
-            ) {
-              try {
-                const meeting = await Meeting.findById(metadata.meetingId);
-                if (meeting) {
-                  meeting.status = "ended";
-                  meeting.endTime = new Date();
-                  await meeting.save();
-                  console.log("✅ Meeting status updated in database");
-                }
-              } catch (dbError) {
-                console.warn(
-                  "⚠️ Failed to update meeting in DB:",
-                  dbError.message
-                );
-              }
-            }
-
-            ws.send(
-              JSON.stringify({
-                type: "transcription_stopped",
-                meetingId: metadata.meetingId,
-              })
-            );
-
-            console.log(
-              `Stopped transcription for meeting ${metadata.meetingId}`
-            );
-            metadata.meetingId = null;
-          }
+          console.log(`✅ User ${userId} registered on WebSocket`);
           break;
         }
 
@@ -325,14 +224,8 @@ wss.on("connection", (ws) => {
 
   ws.on("close", () => {
     const metadata = wsClients.get(ws);
-
-    // Clean up Deepgram connection if exists
-    if (metadata?.meetingId) {
-      deepgramService.closeTranscription(metadata.meetingId);
-    }
-
     wsClients.delete(ws);
-    console.log("WebSocket connection closed");
+    console.log(`🔌 WebSocket connection closed for user ${metadata?.userId || 'unknown'}`);
   });
 
   ws.on("error", (error) => {
@@ -383,22 +276,50 @@ recallService.on("bot-left", ({ botId, userId }) => {
   });
 });
 
-// Recall.ai transcript event handler - broadcast transcripts to frontend
-recallService.on("transcript", (transcript) => {
+// Recall.ai transcript event handler - save to DB and broadcast to frontend
+recallService.on("transcript", async (transcript) => {
+  const { botId, userId, speaker, text, isFinal, timestamp, confidence } = transcript;
+
+  console.log(`📝 Transcript - Bot: ${botId}, Speaker: ${speaker}, Text: "${text}"`);
+
+  // Save final transcripts to database
+  if (isFinal && mongoose.connection.readyState === 1) {
+    try {
+      // Find the meeting associated with this bot
+      const meeting = await Meeting.findOne({ botId, userId, status: { $ne: 'ended' } });
+
+      if (meeting) {
+        meeting.transcriptions.push({
+          speaker: speaker || 'Unknown',
+          text: text,
+          confidence: confidence || 1.0,
+          timestamp: timestamp || new Date(),
+        });
+        await meeting.save();
+        console.log(`💾 Saved transcript to meeting ${meeting._id}`);
+      }
+    } catch (dbError) {
+      console.warn("⚠️ Failed to save transcript to DB:", dbError.message);
+    }
+  }
+
+  // Broadcast to connected WebSocket clients for this user
   wss.clients.forEach((client) => {
     if (client.readyState === 1) {
       const metadata = wsClients.get(client);
+
       // Send to the user who owns this bot
-      if (metadata) {
+      if (metadata?.userId === userId) {
         client.send(
           JSON.stringify({
             type: "transcription",
             data: {
-              speaker: transcript.speaker,
-              text: transcript.text,
-              isFinal: transcript.isFinal,
-              timestamp: transcript.timestamp,
-              confidence: transcript.confidence,
+              speaker: speaker,
+              text: text,
+              isFinal: isFinal,
+              timestamp: timestamp,
+              confidence: confidence,
+              botId: botId,
             },
           })
         );
@@ -435,12 +356,106 @@ server.listen(PORT, () => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
 });
 
+// Desktop SDK service event handlers - broadcast session events to connected clients
+recallDesktopService.on("session-created", ({ sessionId, userId }) => {
+  console.log(`📡 Broadcasting session-created event for session ${sessionId}`);
+  wss.clients.forEach((client) => {
+    if (client.readyState === 1) {
+      const metadata = wsClients.get(client);
+      if (metadata) {
+        client.send(
+          JSON.stringify({
+            type: "session_created",
+            data: {
+              sessionId,
+              userId,
+            },
+          })
+        );
+      }
+    }
+  });
+});
+
+recallDesktopService.on("session-stopped", ({ sessionId, userId }) => {
+  console.log(`📡 Broadcasting session-stopped event for session ${sessionId}`);
+  wss.clients.forEach((client) => {
+    if (client.readyState === 1) {
+      const metadata = wsClients.get(client);
+      if (metadata) {
+        client.send(
+          JSON.stringify({
+            type: "session_stopped",
+            data: {
+              sessionId,
+              userId,
+            },
+          })
+        );
+      }
+    }
+  });
+});
+
+// Desktop SDK transcript event handler - save to DB and broadcast to frontend
+recallDesktopService.on("transcript", async (transcript) => {
+  const { sessionId, userId, speaker, text, isFinal, timestamp, confidence } = transcript;
+
+  console.log(`📝 Desktop Transcript - Session: ${sessionId}, Speaker: ${speaker}, Text: "${text}"`);
+
+  // Save final transcripts to database
+  if (isFinal && mongoose.connection.readyState === 1) {
+    try {
+      // Find the meeting associated with this session (sessionId stored in botId field)
+      const meeting = await Meeting.findOne({ botId: sessionId, userId, status: { $ne: 'ended' } });
+
+      if (meeting) {
+        meeting.transcriptions.push({
+          speaker: speaker || 'Unknown',
+          text: text,
+          confidence: confidence || 1.0,
+          timestamp: timestamp || new Date(),
+        });
+        await meeting.save();
+        console.log(`💾 Saved desktop transcript to meeting ${meeting._id}`);
+      }
+    } catch (dbError) {
+      console.warn("⚠️ Failed to save desktop transcript to DB:", dbError.message);
+    }
+  }
+
+  // Broadcast to connected WebSocket clients for this user
+  wss.clients.forEach((client) => {
+    if (client.readyState === 1) {
+      const metadata = wsClients.get(client);
+
+      // Send to the user who owns this session
+      if (metadata?.userId === userId) {
+        client.send(
+          JSON.stringify({
+            type: "transcription",
+            data: {
+              speaker: speaker,
+              text: text,
+              isFinal: isFinal,
+              timestamp: timestamp,
+              confidence: confidence,
+              sessionId: sessionId,
+            },
+          })
+        );
+      }
+    }
+  });
+});
+
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   console.log("SIGTERM signal received: closing HTTP server");
 
-  // Clean up recall bots
+  // Clean up recall bots and desktop sessions
   await recallService.cleanup();
+  await recallDesktopService.cleanup();
 
   server.close(() => {
     console.log("HTTP server closed");

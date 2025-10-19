@@ -4,7 +4,7 @@ const transcriptionSchema = new mongoose.Schema({
   speaker: {
     type: String,
     required: true,
-    enum: ['user', 'ai_twin', 'other']
+    default: 'Unknown'
   },
   text: {
     type: String,
@@ -27,9 +27,27 @@ const meetingSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  botId: {
+    type: String,
+    index: true,
+    sparse: true  // Allow null for meetings without bots
+  },
+  meetingUrl: {
+    type: String
+  },
+  botName: {
+    type: String,
+    default: 'AI Assistant'
+  },
   title: {
     type: String,
     default: 'Untitled Meeting'
+  },
+  // Recording type: 'bot' (Recall.ai bot joins meeting) or 'desktop' (local screen/audio recording)
+  recordingType: {
+    type: String,
+    enum: ['bot', 'desktop'],
+    default: 'bot'
   },
   startTime: {
     type: Date,
@@ -56,7 +74,8 @@ const meetingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for efficient queries
+// Indexes for efficient queries
 meetingSchema.index({ userId: 1, startTime: -1 });
+meetingSchema.index({ botId: 1, userId: 1 });
 
 export default mongoose.model('Meeting', meetingSchema);

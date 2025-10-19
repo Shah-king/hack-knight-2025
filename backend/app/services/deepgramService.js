@@ -7,6 +7,18 @@ class DeepgramService {
   }
 
   /**
+   * Validate Deepgram configuration
+   * @returns {boolean} True if config is valid
+   */
+  validateConfig() {
+    const isValid = !!process.env.DEEPGRAM_API_KEY;
+    if (!isValid) {
+      console.warn('⚠️  Deepgram API key missing. Required: DEEPGRAM_API_KEY');
+    }
+    return isValid;
+  }
+
+  /**
    * Lazy-load Deepgram client
    * @returns {DeepgramClient}
    */

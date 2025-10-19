@@ -1,6 +1,7 @@
 import express from 'express';
 import elevenlabsService from '../services/elevenlabsService.js';
 import recallService from '../services/recallService.js';
+import audioOutputService from '../services/audioOutputService.js';
 
 const router = express.Router();
 
@@ -55,10 +56,15 @@ router.post('/speak', async (req, res) => {
       similarityBoost
     });
 
-    // Note: Audio injection with Recall.ai uses Output Media API
-    // This requires serving the audio via a web endpoint
-    // For now, just return the audio to the client
-    // TODO: Implement Output Media API integration
+    // If botId is provided, save audio for Output Media API
+    if (botId) {
+      try {
+        await audioOutputService.saveAudio(botId, audioBuffer, text);
+        console.log(`✅ Audio saved for bot ${botId} - ready for Output Media API`);
+      } catch (error) {
+        console.error('Error saving audio:', error);
+      }
+    }
 
     // Return audio as base64
     res.json({
@@ -66,7 +72,8 @@ router.post('/speak', async (req, res) => {
       audio: audioBuffer.toString('base64'),
       text,
       size: audioBuffer.length,
-      botId: botId || null
+      botId: botId || null,
+      message: botId ? 'Audio saved and ready for bot to speak' : 'Audio generated'
     });
   } catch (error) {
     console.error('TTS error:', error);
