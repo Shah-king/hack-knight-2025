@@ -6,6 +6,8 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { FloatingOrbs } from "@/components/ui/floating-orbs";
+import { FloatingIcons } from "@/components/ui/floating-icons";
+import { SimpleAnimatedTitle } from "@/components/ui/simple-animated-title";
 import { motion } from "framer-motion";
 import heroBg from "@/assets/bg1.jpg";
 
@@ -15,6 +17,20 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Animated AI Energy Flow Background */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-purple-600 to-pink-600 opacity-20 blur-3xl"
+        animate={{ 
+          backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+          scale: [1, 1.1, 1]
+        }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+        style={{ backgroundSize: '200% 200%' }}
+      />
+      
+      {/* Floating decorative icons */}
+      <FloatingIcons />
+      
       {/* Floating orbs background */}
       <FloatingOrbs />
       
@@ -45,7 +61,14 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             {isSignedIn ? (
-              <UserButton afterSignOutUrl="/" />
+              <UserButton 
+                afterSignOutUrl="/" 
+                appearance={{
+                  elements: {
+                    avatarBox: "border-0 shadow-none"
+                  }
+                }}
+              />
             ) : (
               <SignInButton mode="modal">
                 <Button
@@ -76,19 +99,15 @@ const Index = () => {
             </motion.div>
 
             {/* Main Heading */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+            <SimpleAnimatedTitle
+              lines={[
+                "Never Miss",
+                "a Meeting",
+                "Again"
+              ]}
               className="text-6xl md:text-7xl font-bold leading-tight"
-            >
-              <AnimatedGradientText>
-                Never Miss
-              </AnimatedGradientText>
-              {" "}a Meeting
-              <br />
-              <span className="text-foreground">Again</span>
-            </motion.h1>
+              delay={0.1}
+            />
 
             {/* Subheading */}
             <motion.p
@@ -134,14 +153,20 @@ const Index = () => {
                   </Button>
                 </SignUpButton>
               )}
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-primary/30 hover:border-primary hover:bg-primary/10 hover:shadow-glow transition-all group"
-              >
-                <Mic className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                Clone Your Voice
-              </Button>
+              <div className="relative group">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-primary/30 hover:border-primary hover:bg-primary/10 hover:shadow-glow transition-all relative z-10"
+                >
+                  <Mic className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                  Clone Your Voice
+                </Button>
+                {/* Animated voice wave rings */}
+                <span className="absolute inset-0 rounded-lg border-2 border-primary opacity-0 group-hover:opacity-100 animate-ping"></span>
+                <span className="absolute inset-0 rounded-lg border-2 border-cyan-400 opacity-0 group-hover:opacity-75 animate-ping" style={{ animationDelay: '0.2s' }}></span>
+                <span className="absolute inset-0 rounded-lg border border-blue-400 opacity-0 group-hover:opacity-50 animate-pulse blur-sm"></span>
+              </div>
             </motion.div>
 
             {/* Features Grid */}
